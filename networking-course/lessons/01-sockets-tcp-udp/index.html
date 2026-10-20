@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Сетевое программирование — Урок 1. Сокеты, TCP и UDP</title>
+  <title>Сокеты, TCP и UDP — Сетевое программирование</title>
 
   <!-- Reveal.js (вендорено, работает офлайн) -->
   <link rel="stylesheet" href="vendor/reveal/reveal.css">
@@ -24,43 +24,114 @@
 
       <!-- 1 · ТИТУЛ -->
       <section class="centered">
-        <p class="label">Сетевое программирование · Урок 1</p>
+        <p class="label">Сетевое программирование</p>
         <h1>Сокеты, <span class="text-accent-1">TCP</span> и <span class="text-accent-3">UDP</span></h1>
         <div class="bar"></div>
-        <p class="lead">Как программы общаются по сети — от Berkeley Sockets до QUIC</p>
-        <aside class="notes">
-          [ПРИВЕТСТВИЕ] План пары: сначала что такое сокеты и как через них пишут программы, потом два транспортных протокола — TCP и UDP, в конце сравним и решим, когда что выбирать.
-
-          Подчеркнуть механику: основная линия идёт вправо, но у некоторых слайдов есть «глубина» — стрелка вниз показывает дополнительные факты, которые рассказываю по желанию, в зависимости от темпа группы.
-        </aside>
+        <p class="lead">Архитектура клиент-сервер и транспортный уровень стека TCP/IP</p>
       </section>
 
-      <!-- 2 · РАЗОГРЕВ -->
-      <section class="centered">
-        <p class="label">Разогрев</p>
-        <p class="impact">Браузер, мессенджер и онлайн-игра<br>— всё это <span class="highlight-1">сокеты</span>.</p>
-        <div class="grid-3" style="margin-top: var(--space-lg); text-align: left;">
+      <!-- 2 · ГДЕ ПРОГРАММИСТ ВСТРЕЧАЕТ СЕТЬ -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>Сетевое взаимодействие в работе программиста</h2>
+        <div class="bar"></div>
+
+        <div class="grid-4" style="margin-top: var(--space-md);">
           <div class="card">
             <h4>Браузер</h4>
-            <p>страницы по <b class="text-accent-1">HTTP</b> поверх TCP</p>
+            <p>↔ веб-сервер<br><span class="text-primary">HTTP</span></p>
           </div>
           <div class="card card-accent-2">
-            <h4>Мессенджер</h4>
-            <p>сообщения по <b class="text-accent-2">TCP</b></p>
+            <h4>Почтовый клиент</h4>
+            <p>↔ почтовый сервер<br><span class="text-primary">SMTP, IMAP</span></p>
+          </div>
+          <div class="card card-accent-5">
+            <h4>Приложение</h4>
+            <p>↔ сервер СУБД<br><span class="text-primary">собственный протокол</span></p>
           </div>
           <div class="card card-accent-3">
-            <h4>Онлайн-игра</h4>
-            <p>позиции игроков по <b class="text-accent-3">UDP</b></p>
+            <h4>Мобильное приложение</h4>
+            <p>↔ API сервера<br><span class="text-primary">HTTPS + JSON</span></p>
           </div>
         </div>
-        <aside class="notes">
-          [ВОПРОС В ЗАЛ] Кто играет онлайн? Кто сегодня открывал браузер? Всё это — одно и то же: две программы обменялись байтами через сеть.
 
-          К концу пары каждый будет понимать, как это устроено изнутри — и сам напишет сервер на Java на практикуме.
-        </aside>
+        <p class="impact" style="margin-top: var(--space-lg);">Каждое сетевое приложение — <span class="highlight-1">два процесса</span>, обменивающихся данными через сеть.</p>
       </section>
 
-      <!-- 3 · СОКЕТ = IP + ПОРТ  (вертикальный стек: + история Berkeley) -->
+      <!-- 3 · СТЕК ПРОТОКОЛОВ -->
+      <section>
+        <p class="label">Стек протоколов</p>
+        <h2>Четыре уровня стека TCP/IP</h2>
+        <div class="bar"></div>
+
+        <div style="margin-top: var(--space-sm);">
+          <div class="card" style="padding: 0.9em 1.6em; margin-bottom: 0.5em;">
+            <h4>Приложение <span class="text-muted" style="font-weight: 400; font-size: 0.8em;">— HTTP, SMTP, DNS</span></h4>
+            <p>смысл передаваемых данных</p>
+          </div>
+
+          <div class="centered" style="margin: 0.5em 0;">
+            <span class="chip"><b>сокеты</b> — интерфейс приложения к транспортному уровню</span>
+          </div>
+
+          <div class="card card-accent-2" style="padding: 0.9em 1.6em; margin-bottom: 0.5em;">
+            <h4>Транспорт <span class="text-muted" style="font-weight: 400; font-size: 0.8em;">— TCP, UDP</span></h4>
+            <p>доставка между процессами: порты, надёжность, темп</p>
+          </div>
+
+          <div class="card card-accent-5" style="padding: 0.9em 1.6em; margin-bottom: 0.5em;">
+            <h4>Сеть <span class="text-muted" style="font-weight: 400; font-size: 0.8em;">— IP</span></h4>
+            <p>адресация и передача между узлами</p>
+          </div>
+
+          <div class="card card-accent-3" style="padding: 0.9em 1.6em;">
+            <h4>Канальный <span class="text-muted" style="font-weight: 400; font-size: 0.8em;">— Ethernet, Wi-Fi</span></h4>
+            <p>передача кадров по физической среде</p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Инкапсуляция: каждый уровень добавляет свой заголовок — данные → сегмент → пакет → кадр</p>
+      </section>
+
+      <!-- 4 · КЛИЕНТ-СЕРВЕР -->
+      <section>
+        <p class="label">Модель взаимодействия</p>
+        <h2>Клиент-серверная модель</h2>
+        <div class="bar"></div>
+
+        <svg viewBox="0 0 1000 280" style="width: 100%; max-width: 1050px; margin: var(--space-sm) auto; display: block;">
+          <defs>
+            <marker id="mB1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+            </marker>
+            <marker id="mG1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+            </marker>
+          </defs>
+
+          <rect x="120" y="80" width="260" height="110" rx="14" fill="#24283b" stroke="#7aa2f7" stroke-width="2"/>
+          <text x="250" y="128" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="32" font-weight="700" fill="#c0caf5">Клиент</text>
+          <text x="250" y="166" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="22" fill="#565f89">активная сторона</text>
+
+          <rect x="620" y="80" width="260" height="110" rx="14" fill="#24283b" stroke="#bb9af7" stroke-width="2"/>
+          <text x="750" y="128" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="32" font-weight="700" fill="#c0caf5">Сервер</text>
+          <text x="750" y="166" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="22" fill="#565f89">пассивная сторона</text>
+
+          <line x1="390" y1="108" x2="610" y2="108" stroke="#7aa2f7" stroke-width="3" marker-end="url(#mB1)"/>
+          <text x="500" y="90" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="24" fill="#7aa2f7">запрос</text>
+
+          <line x1="610" y1="170" x2="390" y2="170" stroke="#9ece6a" stroke-width="3" marker-end="url(#mG1)"/>
+          <text x="500" y="208" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="24" fill="#9ece6a">ответ</text>
+        </svg>
+
+        <ul style="margin-top: var(--space-sm);">
+          <li><b>Сервер</b> работает постоянно и ожидает подключений на <span class="highlight-5">заранее известном порту</span></li>
+          <li><b>Клиент</b> подключается по необходимости и <span class="highlight-1">всегда инициирует</span> обмен</li>
+          <li>Один сервер обслуживает <span class="highlight-2">множество клиентов</span> одновременно</li>
+        </ul>
+      </section>
+
+      <!-- 5 · СОКЕТ = IP + ПОРТ  (+ deep: история) -->
       <section>
         <section>
           <p class="label">Основы</p>
@@ -72,7 +143,7 @@
               <div class="ep-role">Клиент</div>
               <div class="ep-addr">192.168.1.10<span class="port">:52341</span></div>
             </div>
-            <div class="net-link"><span class="net-label">интернет</span></div>
+            <div class="net-link"><span class="net-label">сеть</span></div>
             <div class="ep-card">
               <div class="ep-role">Сервер</div>
               <div class="ep-addr">93.184.216.34<span class="port">:443</span></div>
@@ -80,8 +151,8 @@
           </div>
 
           <ul>
-            <li><b>IP-адрес</b> — <span class="highlight-5">где</span>: какой компьютер в сети</li>
-            <li><b>порт</b> — <span class="highlight-3">кому</span>: какая программа ждёт данные (0–65535)</li>
+            <li><b>IP-адрес</b> — <span class="highlight-5">где</span>: узел в сети</li>
+            <li><b>порт</b> — <span class="highlight-3">кому</span>: процесс внутри узла (0–65535)</li>
           </ul>
 
           <div class="chip-row" style="margin-top: var(--space-md);">
@@ -90,83 +161,199 @@
             <span class="chip"><b>25</b> SMTP</span>
             <span class="chip"><b>53</b> DNS</span>
           </div>
-
-          <aside class="notes">
-            Аналогия: IP-адрес — адрес дома, порт — номер квартиры. Письмо дойдёт до дома, а квартиру выбирает порт.
-
-            Клиентский порт обычно случайный (динамический, 49152–65535), серверный — известный заранее: 443 для HTTPS, 80 для HTTP.
-
-            [ЕСЛИ ЕСТЬ ВРЕМЯ] нажать ↓ и рассказать историю 1983 года — студентам заходит.
-          </aside>
         </section>
 
         <section class="deep" data-background-color="#16161e">
           <p class="label">↓ Доп. факт</p>
-          <h2>1983: всё началось с BSD UNIX</h2>
+          <h2>История: от ARPANET до POSIX</h2>
           <div class="deep-rule"></div>
           <div class="grid-1-2">
-            <ul>
-              <li>Berkeley Sockets вошли в <b>BSD 4.2</b> — их написал <b>Билл Джой</b> (будущий основатель Sun)</li>
-              <li>Идея Unix: <span class="highlight-5">«всё есть файл»</span> — сеть как чтение и запись дескриптора</li>
+            <ul style="font-size: var(--size-small);">
+              <li><b class="text-accent-4">1969</b> — ARPANET: первая сеть с коммутацией пакетов</li>
+              <li><b class="text-accent-4">1974</b> — Сёрф и Кан: идея протокола TCP</li>
+              <li><b class="text-accent-4">1981</b> — RFC 791 (IP) и RFC 793 (TCP) — действуют по сей день</li>
+              <li><b class="text-accent-4">янв. 1983</b> — «флаг-день»: ARPANET полностью переходит на TCP/IP</li>
+              <li><b class="text-accent-4">авг. 1983</b> — BSD 4.2: интерфейс сокетов вместе со стеком TCP/IP</li>
+              <li><b class="text-accent-4">1990-е</b> — POSIX закрепляет API; WinSock переносит его в Windows</li>
             </ul>
             <div class="card card-accent-4">
-              <h4>40 лет без изменений</h4>
-              <p>Один и тот же API прожил эпохи:<br><span class="text-accent-1">C → C++ → Java → Python → Go</span></p>
-              <p style="margin-top: 1em;">socket — англ. <em>«разъём»</em>: воткнул провод — есть соединение</p>
+              <h4>Билл Джой</h4>
+              <p>Автор сокетов: аспирант Беркли, позже сооснователь Sun Microsystems и автор редактора vi. Философия Unix — <span class="text-primary">«всё есть файл»</span>: сеть как чтение и запись дескриптора</p>
+              <p style="margin-top: 0.8em;">Интерфейс 1983 года без изменений используется в C, Java, Python, Go</p>
             </div>
           </div>
-          <aside class="notes">
-            История для настроения: 1983 год, Билл Джой пишет сокеты для Berkeley UNIX, заодно TCP/IP. Через это «всё есть файл» — сеть как файловый дескриптор.
-
-            Именно поэтому socket API везде одинаковый: Java Socket, Python socket — это обёртки над тем самым API из 1983 года.
-          </aside>
         </section>
       </section>
 
-      <!-- 4 · ЖИЗНЕННЫЙ ЦИКЛ  (вертикальный стек: + Java-код) -->
+      <!-- 6 · IP-АДРЕСАЦИЯ -->
+      <section>
+        <p class="label">Адресация</p>
+        <h2>IP-адрес: адрес узла в сети</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <p style="margin-top: var(--space-sm);"><code>IPv4 = 32 бита</code> — четыре октета от 0 до 255: <code style="font-size: 1.3em;">192.168.1.10</code></p>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Публичные</h4>
+            <p>уникальны во всём интернете;<br>например <span class="text-primary">93.184.216.34</span></p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Частные (RFC 1918)</h4>
+            <p><span class="text-primary">10.0.0.0/8 · 172.16.0.0/12 · 192.168.0.0/16</span><br>только внутри сети; роутер (NAT) представляет их одним публичным адресом</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Loopback</h4>
+            <p><span class="text-primary">127.0.0.1</span> (localhost)<br>связь внутри одного узла; данные не покидают машину</p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Запись /24 — маска подсети: сколько битов адреса отведено под номер сети</p>
+      </section>
+
+      <!-- 7 · ПОРТЫ  (+ deep: четвёрка) -->
       <section>
         <section>
-          <p class="label">Socket API</p>
-          <h2>Жизненный цикл: сервер и клиент</h2>
-          <div class="bar bar-accent-2"></div>
+          <p class="label">Порты</p>
+          <h2>65 535 «квартир» в одном доме</h2>
+          <div class="bar bar-accent-3"></div>
 
-          <div class="flow-lane fragment" style="margin-bottom: var(--space-lg);">
-            <span class="lane-title">Сервер</span>
-            <span class="flow-pill">socket</span><span class="flow-arrow">→</span>
-            <span class="flow-pill">bind</span><span class="flow-arrow">→</span>
-            <span class="flow-pill">listen</span><span class="flow-arrow">→</span>
-            <span class="flow-pill hot">accept</span><span class="flow-arrow">→</span>
-            <span class="flow-pill">recv / send</span><span class="flow-arrow">→</span>
-            <span class="flow-pill">close</span>
+          <div class="grid-3" style="margin-top: var(--space-md);">
+            <div class="card">
+              <h4 class="text-accent-1">0–1023</h4>
+              <p>системные: <span class="text-primary">80 · 443 · 25 · 53</span><br>занятие — с правами администратора</p>
+            </div>
+            <div class="card card-accent-2">
+              <h4 class="text-accent-2">1024–49151</h4>
+              <p>зарегистрированные:<br><span class="text-primary">3306 MySQL · 5432 PostgreSQL · 8080</span></p>
+            </div>
+            <div class="card card-accent-3">
+              <h4 class="text-accent-3">49152–65535</h4>
+              <p>эфемерные: ОС назначает <span class="text-primary">клиентам</span> на время соединения</p>
+            </div>
           </div>
 
-          <div class="flow-lane fragment">
-            <span class="lane-title">Клиент</span>
-            <span class="flow-pill">socket</span><span class="flow-arrow">→</span>
-            <span class="flow-pill hot">connect</span><span class="flow-arrow">→</span>
-            <span class="flow-pill">send / recv</span><span class="flow-arrow">→</span>
-            <span class="flow-pill">close</span>
-          </div>
-
-          <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Одни и те же шаги — в любом языке: C, Java, Python</p>
-
-          <aside class="notes">
-            Пройти верхнюю линию: bind — «занять порт», listen — «встать в очередь ожидания», accept — «взять трубку».
-
-            [FRAGMENT] Клиент проще: socket → connect — и уже можно слать байты.
-
-            [ЕСЛИ ГРУППА СИЛЬНАЯ] нажать ↓ и показать Java-код целиком; слабой группе — показать на практикуме.
-          </aside>
+          <p class="impact" style="margin-top: var(--space-lg);">Один порт — <span class="highlight-1">один слушатель</span>.</p>
         </section>
 
         <section class="deep" data-background-color="#16161e">
           <p class="label">↓ Доп. факт</p>
-          <h2>Тот же echo-сервер на Java</h2>
+          <h2>Один порт — тысячи соединений</h2>
           <div class="deep-rule"></div>
-          <pre style="width: 100%;"><code class="language-java" data-trim>try (ServerSocket server = new ServerSocket(8080)) {  // bind + listen
-    System.out.println("Жду клиента на :8080");
+          <ul>
+            <li>Соединение идентифицируется <b>четвёркой</b>: IP и порт клиента, IP и порт сервера</li>
+            <li>Ядро хранит таблицу сокетов — по записи на каждую пару</li>
+          </ul>
+          <pre style="margin-top: var(--space-sm);">192.168.1.10:52341 ─┐
+                    ├─→ 93.184.216.34:443
+192.168.1.10:52342 ─┘
+
+две записи в таблице — два независимых соединения</pre>
+          <p class="impact" style="margin-top: var(--space-sm); font-size: var(--size-impact);">Порт указывает «квартиру», соединение — конкретный <span class="highlight-4">сеанс связи</span>.</p>
+        </section>
+      </section>
+
+      <!-- 8 · ТИПЫ СОКЕТОВ -->
+      <section>
+        <p class="label">Типы сокетов</p>
+        <h2>Два типа сокетов — два протокола</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card vs-col">
+            <h3 class="text-accent-1">SOCK_STREAM → TCP</h3>
+            <ul>
+              <li>непрерывный двунаправленный <b>поток байтов</b></li>
+              <li>доставка подтверждается, потери восстанавливаются</li>
+              <li>порядок байтов гарантируется</li>
+            </ul>
+          </div>
+          <div class="card card-accent-3 vs-col">
+            <h3 class="text-accent-3">SOCK_DGRAM → UDP</h3>
+            <ul>
+              <li>отдельные самостоятельные <b>дейтаграммы</b></li>
+              <li>доставка и порядок не гарантируются</li>
+              <li>минимальные накладные расходы</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Тип задаётся при создании сокета и определяет транспортный протокол</p>
+      </section>
+
+      <!-- 9 · СЕРВЕР: ЖИЗНЕННЫЙ ЦИКЛ -->
+      <section>
+        <p class="label">Сокетный API</p>
+        <h2>Сервер: жизненный цикл</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <div class="flow-lane" style="margin-bottom: var(--space-lg); margin-top: var(--space-md);">
+          <span class="flow-pill">socket</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">bind</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">listen</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">accept</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">recv / send</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">close</span>
+        </div>
+
+        <ul>
+          <li><b>bind</b> — зарегистрировать адрес и порт за сокетом</li>
+          <li><b>listen</b> — перейти в режим ожидания; ядро ведёт очередь входящих подключений</li>
+          <li><b>accept</b> — принять подключение из очереди; возвращает <span class="highlight-1">новый сокет</span> — слушающий продолжает работу</li>
+        </ul>
+      </section>
+
+      <!-- 10 · КЛИЕНТ: ЖИЗНЕННЫЙ ЦИКЛ -->
+      <section>
+        <p class="label">Сокетный API</p>
+        <h2>Клиент: жизненный цикл</h2>
+        <div class="bar"></div>
+
+        <div class="flow-lane" style="margin-bottom: var(--space-lg); margin-top: var(--space-md);">
+          <span class="flow-pill">socket</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">connect</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">send / recv</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">close</span>
+        </div>
+
+        <ul>
+          <li><b>connect</b> — установить соединение: ОС выбирает свободный эфемерный порт и выполняет рукопожатие</li>
+          <li>после connect сокет готов к обмену <span class="highlight-1">в обоих направлениях</span></li>
+        </ul>
+
+        <div class="chip-row" style="margin-top: var(--space-md);">
+          <span class="chip"><b>Connection refused</b> — на порту нет слушателя</span>
+          <span class="chip"><b>Timeout</b> — узел недоступен или не отвечает</span>
+        </div>
+      </section>
+
+      <!-- 11 · JAVA: СЕРВЕР  (+ deep: полный echo) -->
+      <section>
+        <section>
+          <p class="label">Java</p>
+          <h2>Сервер на Java</h2>
+          <div class="bar"></div>
+
+          <pre style="width: 100%;"><code class="language-java" data-trim>ServerSocket server = new ServerSocket(8080);  // socket + bind + listen
+Socket client = server.accept();               // принять подключение
+
+client.getInputStream();                       // чтение (recv)
+client.getOutputStream();                      // запись (send)</code></pre>
+
+          <div class="chip-row" style="margin-top: var(--space-md);">
+            <span class="chip"><b>ServerSocket</b> — слушающий сокет</span>
+            <span class="chip"><b>Socket</b> — сокет соединения</span>
+            <span class="chip">потоки ввода-вывода — <b>как работа с файлом</b></span>
+          </div>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Полный echo-сервер на Java</h2>
+          <div class="deep-rule"></div>
+          <pre style="width: 100%;"><code class="language-java" data-trim>try (ServerSocket server = new ServerSocket(8080)) { // bind + listen
     while (true) {
-        Socket client = server.accept();            // ждём соединения
+        Socket client = server.accept();            // ждём подключения
 
         new Thread(() -> {                          // каждому клиенту — поток
             try (Socket c = client) {
@@ -176,23 +363,103 @@
                 while ((b = in.read()) != -1) {
                     out.write(b);                   // эхо-ответ
                 }
-            } catch (IOException e) { /* клиент ушёл */ }
+            } catch (IOException e) { /* клиент отключился */ }
         }).start();
     }
 }</code></pre>
-          <aside class="notes">
-            Обратить внимание: ServerSocket прячет socket+bind+listen в один вызов конструктора.
-
-            Этот код — заготовка ПР №60: на практикуме соберём его с нуля шаг за шагом и проверим через telnet.
-          </aside>
         </section>
       </section>
 
-      <!-- 5 · TCP HANDSHAKE  (вертикальный стек: + заголовок сегмента) -->
+      <!-- 12 · JAVA: КЛИЕНТ -->
+      <section>
+        <p class="label">Java</p>
+        <h2>Клиент на Java</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <pre style="width: 100%;"><code class="language-java" data-trim>Socket sock = new Socket("example.com", 80);   // socket + connect
+
+var out = new PrintWriter(sock.getOutputStream(), true);
+var in  = new BufferedReader(
+          new InputStreamReader(sock.getInputStream()));
+
+out.println("GET / HTTP/1.0");                  // send: строка + \n
+String line;
+while ((line = in.readLine()) != null)          // recv: до разделителя
+    System.out.println(line);
+
+sock.close();</code></pre>
+
+        <p class="text-muted" style="margin-top: var(--space-sm); font-size: var(--size-body);"><code>readLine()</code> читает до разделителя <code>\n</code> — стратегия разбиения потока на сообщения</p>
+      </section>
+
+      <!-- 13 · ГРАНИЦЫ СООБЩЕНИЙ -->
+      <section>
+        <p class="label">Транспорт · TCP</p>
+        <h2>Поток байтов: границы сообщений</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">TCP — поток</h4>
+            <p>границы операций записи <span class="text-primary">не сохраняются</span></p>
+            <p style="margin-top: 0.8em;"><code>send("A",10) + send("B",10)</code><br>может быть получено как один <code>recv</code> на 20 байт</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">UDP — дейтаграммы</h4>
+            <p>одна операция отправки соответствует <span class="text-primary">ровно одной</span> операции получения</p>
+          </div>
+        </div>
+
+        <p class="label" style="margin-top: var(--space-lg); color: var(--accent-2);">Разделение сообщений в TCP — задача протокола приложения</p>
+        <div class="grid-3" style="margin-top: var(--space-sm);">
+          <div class="card card-accent-2">
+            <h4>Разделитель</h4>
+            <p>читать до <code>\n</code><br><span class="text-primary">readLine()</span></p>
+          </div>
+          <div class="card card-accent-5">
+            <h4>Поле длины</h4>
+            <p>сначала N байт длины,<br>затем N байт данных</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>Фиксированный размер</h4>
+            <p>сообщения одинаковой<br>длины</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 14 · TCP: ОБЕЩАНИЯ -->
+      <section>
+        <p class="label">Транспорт · TCP</p>
+        <h2>Четыре свойства TCP</h2>
+        <div class="bar"></div>
+
+        <div class="grid-4" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4>Соединение</h4>
+            <p>стороны устанавливают сеанс и согласуют параметры</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4>Надёжность</h4>
+            <p>потери <span class="text-accent-2">восстанавливаются</span>, искажения обнаруживаются</p>
+          </div>
+          <div class="card card-accent-5">
+            <h4>Упорядоченность</h4>
+            <p>байты доставляются <span class="text-accent-5">в порядке отправки</span></p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>Поток байтов</h4>
+            <p>границы сообщений <span class="text-accent-3">отсутствуют</span> — важно при проектировании протокола</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Плата за гарантии — <span class="highlight-3">время</span>: установление и подтверждения требуют задержек.</p>
+      </section>
+
+      <!-- 15 · HANDSHAKE  (+ deep: заголовок, SYN flood) -->
       <section>
         <section>
-          <p class="label">Транспортный уровень</p>
-          <h2>TCP: рукопожатие перед разговором</h2>
+          <p class="label">Транспорт · TCP</p>
+          <h2>Установление соединения</h2>
           <div class="bar"></div>
 
           <svg viewBox="0 0 1000 620" style="width: 100%; max-width: 1100px; margin: 0 auto; display: block;">
@@ -208,43 +475,29 @@
               </marker>
             </defs>
 
-            <!-- участники -->
             <rect x="140" y="16" width="220" height="62" rx="12" fill="#24283b" stroke="#7aa2f7" stroke-width="2"/>
             <text x="250" y="55" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="30" font-weight="700" fill="#c0caf5">Клиент</text>
             <rect x="640" y="16" width="220" height="62" rx="12" fill="#24283b" stroke="#bb9af7" stroke-width="2"/>
             <text x="750" y="55" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="30" font-weight="700" fill="#c0caf5">Сервер</text>
 
-            <!-- линии жизни -->
             <line x1="250" y1="78" x2="250" y2="600" stroke="#565f89" stroke-width="2" stroke-dasharray="6 8"/>
             <line x1="750" y1="78" x2="750" y2="600" stroke="#565f89" stroke-width="2" stroke-dasharray="6 8"/>
 
-            <!-- SYN -->
             <line x1="250" y1="185" x2="735" y2="185" stroke="#7aa2f7" stroke-width="3" marker-end="url(#arr-blue)"/>
             <text x="495" y="165" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="30" font-weight="700" fill="#7aa2f7">SYN</text>
-            <text x="495" y="220" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#565f89">seq = x · «хочу соединиться»</text>
+            <text x="495" y="220" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#565f89">seq = x · запрос соединения</text>
 
-            <!-- SYN+ACK -->
             <line x1="750" y1="315" x2="265" y2="315" stroke="#bb9af7" stroke-width="3" marker-end="url(#arr-violet)"/>
             <text x="495" y="295" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="30" font-weight="700" fill="#bb9af7">SYN + ACK</text>
-            <text x="495" y="350" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#565f89">seq = y, ack = x+1 · «принято, я тоже готов»</text>
+            <text x="495" y="350" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#565f89">seq = y, ack = x+1 · согласие</text>
 
-            <!-- ACK -->
             <line x1="250" y1="445" x2="735" y2="445" stroke="#7aa2f7" stroke-width="3" marker-end="url(#arr-blue)"/>
             <text x="495" y="425" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="30" font-weight="700" fill="#7aa2f7">ACK</text>
-            <text x="495" y="480" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#565f89">ack = y+1 · «подтверждаю, поехали»</text>
+            <text x="495" y="480" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#565f89">ack = y+1 · подтверждение</text>
 
-            <!-- данные -->
             <line x1="250" y1="555" x2="735" y2="555" stroke="#9ece6a" stroke-width="3" stroke-dasharray="10 8" marker-end="url(#arr-green)"/>
             <text x="495" y="535" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="30" font-weight="700" fill="#9ece6a">данные</text>
           </svg>
-
-          <aside class="notes">
-            Аналогия телефонного звонка: «Алло?» — «Да, слушаю» — «Отлично, начинаем». Только роли SYM/ACK.
-
-            Три пакета — и только потом данные. Зато дальше TCP гарантирует: всё дойдёт и в правильном порядке.
-
-            [ДЕМО] Если есть время — открыть Wireshark и показать живой handshake. На ↓ — разбор заголовка сегмента.
-          </aside>
         </section>
 
         <section class="deep" data-background-color="#16161e">
@@ -255,57 +508,384 @@
             <div class="hcell"><b>Порт источника</b><span class="bits">16 бит</span></div>
             <div class="hcell"><b>Порт назначения</b><span class="bits">16 бит</span></div>
             <div class="hcell span-2 hot"><b>Порядковый номер (SEQ)</b><span class="bits">32 бита · номер байта в потоке</span></div>
-            <div class="hcell span-2 hot"><b>Подтверждение (ACK)</b><span class="bits">32 бита · «дошло до сюда»</span></div>
+            <div class="hcell span-2 hot"><b>Подтверждение (ACK)</b><span class="bits">32 бита · «получено до сюда»</span></div>
             <div class="hcell flag"><b>SYN · ACK · FIN · RST</b><span class="bits">флаги</span></div>
-            <div class="hcell"><b>Окно (window)</b><span class="bits">сколько ещё влезет</span></div>
+            <div class="hcell"><b>Окно (window)</b><span class="bits">допустимый объём «в полёте»</span></div>
             <div class="hcell"><b>Контрольная сумма</b><span class="bits">целостность</span></div>
             <div class="hcell"><b>Данные приложения…</b><span class="bits">payload</span></div>
           </div>
-          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Именно эти поля вы увидите в Wireshark на практикуме</p>
-          <aside class="notes">
-            Связать с предыдущим слайдом: SYN и ACK на диаграмме — это биты в поле флагов; seq/ack из «рукопожатия» живут в синих ячейках.
+        </section>
 
-            Окно — «сколько ещё влезет»: получатель сообщает отправителю свой буфер. Это управление потоком.
-          </aside>
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>SYN flood и SYN cookies</h2>
+          <div class="deep-rule"></div>
+          <div class="grid-1-2">
+            <ul>
+              <li><b>SYN flood</b>: атакующий шлёт SYN и не отвечает на SYN+ACK; сервер копит полуоткрытые соединения и расходует ресурсы</li>
+              <li><b>SYN cookies</b>: сервер не хранит состояние, кодируя его в номере seq ответа — подлинный клиент восстановит соединение, атакующий — нет</li>
+            </ul>
+            <div class="card card-accent-4">
+              <h4>Вывод</h4>
+              <p>Даже простой механизм установления соединения требует защиты от злоупотребления</p>
+            </div>
+          </div>
         </section>
       </section>
 
-      <!-- 6 · TCP vs UDP -->
+      <!-- 16 · ФЛАГИ TCP -->
       <section>
-        <p class="label">Итог</p>
-        <h2>TCP или UDP?</h2>
-        <div class="bar bar-accent-3"></div>
+        <p class="label">Транспорт · TCP</p>
+        <h2>Флаги TCP-сегмента</h2>
+        <div class="bar"></div>
 
-        <div class="grid-2" style="margin-top: var(--space-md);">
-          <div class="card vs-col">
-            <h3 class="text-accent-1">TCP — надёжный</h3>
-            <ul>
-              <li>соединение: handshake перед данными</li>
-              <li>всё доставляется, в правильном порядке</li>
-              <li>потерялось — <span class="highlight-2">перешлёт заново</span></li>
-              <li>HTTP, почта, файлы, мессенджеры</li>
-            </ul>
+        <div class="hdr-grid" style="grid-template-columns: 260px 1fr; margin-top: var(--space-md);">
+          <div class="hcell flag"><b>SYN</b></div>
+          <div class="hcell" style="text-align: left;">установка соединения, синхронизация начальных номеров</div>
+          <div class="hcell flag"><b>ACK</b></div>
+          <div class="hcell" style="text-align: left;">поле подтверждения значимо — почти все сегменты после установления</div>
+          <div class="hcell flag"><b>FIN</b></div>
+          <div class="hcell" style="text-align: left;">корректное закрытие одного направления передачи</div>
+          <div class="hcell flag"><b>RST</b></div>
+          <div class="hcell" style="text-align: left;">немедленный аварийный сброс соединения</div>
+          <div class="hcell flag"><b>PSH</b></div>
+          <div class="hcell" style="text-align: left;">передать данные приложению без ожидания накопления</div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);"><b class="text-primary">RST приходит</b> при подключении к незанятому порту, при аварийном завершении собеседника, при записи в закрытое соединение</p>
+      </section>
+
+      <!-- 17 · НАДЁЖНОСТЬ И БУФЕРЫ  (+ deep: Нагл) -->
+      <section>
+        <section>
+          <p class="label">Транспорт · TCP</p>
+          <h2>Буферы и надёжность доставки</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <div class="flow-lane" style="margin: var(--space-md) 0;">
+            <span class="flow-pill">приложение</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">send()</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">буфер отправки</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">сеть</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">буфер приёма</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">recv()</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">приложение</span>
           </div>
-          <div class="card card-accent-3 vs-col">
-            <h3 class="text-accent-3">UDP — быстрый</h3>
-            <ul>
-              <li>без соединения: сразу шлём</li>
-              <li>без гарантий доставки и порядка</li>
-              <li>зато <span class="highlight-3">никаких задержек</span></li>
-              <li>DNS, игры, стриминг, VoIP</li>
-            </ul>
+
+          <ul style="margin-bottom: var(--space-md);">
+            <li><b>send</b> лишь копирует данные в буфер ядра — дальнейшую передачу ведёт TCP</li>
+            <li>буферы есть <span class="highlight-1">у каждой стороны</span>: отправка и приём асинхронны друг другу</li>
+          </ul>
+
+          <div class="grid-3">
+            <div class="card fragment">
+              <h4><span class="text-accent-1">1.</span> Подтверждения</h4>
+              <p>каждый байт учитывается; <span class="text-primary">ACK = «получено до N»</span></p>
+            </div>
+            <div class="card card-accent-2 fragment">
+              <h4><span class="text-accent-2">2.</span> Ретрансмиссия</h4>
+              <p>нет подтверждения за таймаут — <span class="text-primary">повторная передача</span></p>
+            </div>
+            <div class="card card-accent-3 fragment">
+              <h4><span class="text-accent-3">3.</span> Быстрый повтор</h4>
+              <p>три дублирующихся ACK — повтор <span class="text-primary">без ожидания таймаута</span></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Алгоритм Нагла и TCP_NODELAY</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Проблема</b>: приложение пишет мелкими порциями — сеть тонет в крошечных сегментах (40 байт заголовков ради 1 байта данных)</li>
+            <li><b>Решение Нагла</b>: копить мелкие записи, пока не подтверждены предыдущие данные или не наберётся полный сегмент</li>
+            <li><b>Плата</b>: дополнительная задержка для интерактивных протоколов — отключается опцией <code>TCP_NODELAY</code></li>
+          </ul>
+          <div class="card card-accent-4" style="margin-top: var(--space-md);">
+            <h4>Компромисс</h4>
+            <p>Экономия трафика против отзывчивости — выбирает разработчик приложения</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- 18 · ОКНО -->
+      <section>
+        <p class="label">Транспорт · TCP</p>
+        <h2>Окно: темп передачи</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Управление потоком</h4>
+            <p>приёмник объявляет окно — сколько байт готов принять; <span class="text-primary">ноль = пауза</span></p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Скользящее окно</h4>
+            <p>несколько сегментов <span class="text-primary">в полёте одновременно</span>; окно сдвигается по мере подтверждений</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Контроль перегрузки</h4>
+            <p>потери в сети — TCP <span class="text-primary">снижает темп сам</span> (slow start)</p>
           </div>
         </div>
 
-        <p class="impact" style="margin-top: var(--space-lg);">Выбор — <span class="highlight-1">надёжность</span> против <span class="highlight-3">скорости</span>.</p>
+        <p class="impact" style="margin-top: var(--space-lg);">Регулировка темпа — <span class="highlight-1">целиком внутри TCP</span>. Приложение не участвует.</p>
+      </section>
 
-        <aside class="notes">
-          [ВОПРОС В ЗАЛ] Что выбрать для скачивания файла? А для позиции игрока в шутере, где важнее свежесть, чем полнота?
+      <!-- 19 · РАЗРЫВ -->
+      <section>
+        <p class="label">Транспорт · TCP</p>
+        <h2>Завершение соединения</h2>
+        <div class="bar"></div>
 
-          Упомянуть: HTTP/3 поверх QUIC — это UDP, который научился надёжности. Всё возвращается.
+        <svg viewBox="0 0 1000 470" style="width: 100%; max-width: 1000px; margin: var(--space-sm) auto; display: block;">
+          <defs>
+            <marker id="mB2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+            </marker>
+            <marker id="mM2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#565f89"/>
+            </marker>
+          </defs>
 
-          Анонс: на практикуме ПР №60 пишем echo-сервер на Java — тот код с глубокого слайда.
-        </aside>
+          <rect x="140" y="10" width="220" height="56" rx="12" fill="#24283b" stroke="#7aa2f7" stroke-width="2"/>
+          <text x="250" y="46" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="28" font-weight="700" fill="#c0caf5">Клиент</text>
+          <rect x="640" y="10" width="220" height="56" rx="12" fill="#24283b" stroke="#bb9af7" stroke-width="2"/>
+          <text x="750" y="46" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="28" font-weight="700" fill="#c0caf5">Сервер</text>
+
+          <line x1="250" y1="66" x2="250" y2="450" stroke="#565f89" stroke-width="2" stroke-dasharray="6 8"/>
+          <line x1="750" y1="66" x2="750" y2="450" stroke="#565f89" stroke-width="2" stroke-dasharray="6 8"/>
+
+          <line x1="250" y1="130" x2="735" y2="130" stroke="#7aa2f7" stroke-width="3" marker-end="url(#mB2)"/>
+          <text x="495" y="112" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="26" font-weight="700" fill="#7aa2f7">FIN</text>
+          <text x="495" y="162" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="20" fill="#565f89">закрытие направления клиента</text>
+
+          <line x1="750" y1="225" x2="265" y2="225" stroke="#565f89" stroke-width="3" marker-end="url(#mM2)"/>
+          <text x="495" y="207" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="26" font-weight="700" fill="#a9b1d6">ACK</text>
+
+          <line x1="750" y1="320" x2="265" y2="320" stroke="#bb9af7" stroke-width="3" marker-end="url(#mM2)"/>
+          <text x="495" y="302" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="26" font-weight="700" fill="#bb9af7">FIN</text>
+          <text x="495" y="352" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="20" fill="#565f89">закрытие направления сервера</text>
+
+          <line x1="250" y1="415" x2="735" y2="415" stroke="#565f89" stroke-width="3" marker-end="url(#mM2)"/>
+          <text x="495" y="397" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="26" font-weight="700" fill="#a9b1d6">ACK</text>
+        </svg>
+
+        <ul>
+          <li><b>Полузакрытие</b>: FIN закрывает одно направление — данные другого направления продолжают доставляться</li>
+          <li><b>RST</b> — немедленный сброс без доставки накопленных данных</li>
+          <li><b>TIME_WAIT</b>: закрывшая первой сторона ~60 с удерживает запись — защита от повторов старых сегментов</li>
+        </ul>
+      </section>
+
+      <!-- 20 · UDP: ДЕЙТАГРАММЫ -->
+      <section>
+        <p class="label">Транспорт · UDP</p>
+        <h2>UDP: протокол дейтаграмм</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-1-2" style="margin-top: var(--space-md); align-items: center;">
+          <div class="centered">
+            <p class="stat text-accent-3" style="font-size: var(--size-stat);">8 байт</p>
+            <p class="stat-label">весь заголовок UDP</p>
+          </div>
+          <div class="hdr-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="hcell"><b>Порт источника</b></div>
+            <div class="hcell"><b>Порт назначения</b></div>
+            <div class="hcell"><b>Длина</b></div>
+            <div class="hcell"><b>Сумма</b></div>
+            <div class="hcell" style="grid-column: span 4;"><b>Данные…</b><span class="bits">дейтаграмма — самостоятельная единица передачи</span></div>
+          </div>
+        </div>
+
+        <ul style="margin-top: var(--space-md);">
+          <li>соединение не устанавливается: нет номеров, подтверждений и состояния сеанса</li>
+          <li>доставка и порядок <span class="highlight-3">не гарантируются</span></li>
+          <li>границы сообщений сохраняются: <span class="highlight-2">одна операция отправки — ровно одна операция получения</span>; TCP, в отличие от UDP, передаёт поток байтов без границ</li>
+        </ul>
+      </section>
+
+      <!-- 21 · UDP: ПРИМЕНЕНИЕ  (+ deep: MTU) -->
+      <section>
+        <section>
+          <p class="label">Транспорт · UDP</p>
+          <h2>Применение UDP</h2>
+          <div class="bar bar-accent-3"></div>
+
+          <div class="grid-3" style="margin-top: var(--space-md);">
+            <div class="card">
+              <h4>DNS</h4>
+              <p>разрешение имён: запрос и ответ — <span class="text-primary">один обмен</span></p>
+            </div>
+            <div class="card card-accent-2">
+              <h4>DHCP</h4>
+              <p>начальная настройка узла: <span class="text-primary">адреса ещё нет</span> для TCP</p>
+            </div>
+            <div class="card card-accent-5">
+              <h4>NTP</h4>
+              <p>синхронизация времени: <span class="text-primary">крошечные</span> сообщения</p>
+            </div>
+            <div class="card card-accent-3">
+              <h4>RTP</h4>
+              <p>потоковые аудио и видео: <span class="text-primary">свежесть важнее полноты</span></p>
+            </div>
+            <div class="card card-accent-4">
+              <h4>Телеметрия</h4>
+              <p>регулярные показания датчиков: потеря единичного отчёта <span class="text-primary">некритична</span></p>
+            </div>
+          </div>
+
+          <p class="impact" style="margin-top: var(--space-lg);">Общее: <span class="highlight-3">оперативность</span> важнее полноты доставки.</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Размер пакета: MTU и фрагментация</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>MTU</b> — максимальный размер кадра канального уровня (Ethernet: <span class="text-primary">1500 байт</span>)</li>
+            <li>сообщение больше MTU — IP <span class="highlight-4">разбивает его на фрагменты</span>; сборка выполняется только у получателя</li>
+            <li>повторов на уровне IP нет: <b>потеря одного фрагмента — потеря всего сообщения</b></li>
+            <li>TCP избегает фрагментации, согласовывая MSS ≈ 1460; в UDP размер контролирует <span class="text-primary">само приложение</span></li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 22 · TCP vs UDP  (+ deep: QUIC) -->
+      <section>
+        <section>
+          <p class="label">Сравнение</p>
+          <h2>TCP или UDP</h2>
+          <div class="bar bar-accent-3"></div>
+
+          <div class="grid-2" style="margin-top: var(--space-md);">
+            <div class="card vs-col">
+              <h3 class="text-accent-1">TCP — с гарантиями</h3>
+              <ul>
+                <li>соединение устанавливается рукопожатием</li>
+                <li>доставка и порядок гарантируются</li>
+                <li>потери <span class="highlight-2">восстанавливаются</span></li>
+                <li>HTTP, электронная почта, передача файлов, СУБД</li>
+              </ul>
+            </div>
+            <div class="card card-accent-3 vs-col">
+              <h3 class="text-accent-3">UDP — минималистичный</h3>
+              <ul>
+                <li>соединение отсутствует: передача сразу</li>
+                <li>доставка и порядок не гарантируются</li>
+                <li>минимальные задержки <span class="highlight-3">и накладные расходы</span></li>
+                <li>DNS, DHCP, NTP, потоковое мультимедиа</li>
+              </ul>
+            </div>
+          </div>
+
+          <p class="impact" style="margin-top: var(--space-lg);">Выбор — <span class="highlight-1">полнота доставки</span> против <span class="highlight-3">оперативности</span>.</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>QUIC: надёжность поверх UDP</h2>
+          <div class="deep-rule"></div>
+          <div class="grid-1-2">
+            <ul>
+              <li>транспортный протокол <b>поверх UDP</b>; основа HTTP/3</li>
+              <li>надёжность и упорядоченность — как у TCP, но <span class="highlight-5">по отдельным потокам</span>: потеря в одном не блокирует остальные</li>
+              <li>встроенное шифрование TLS 1.3; быстрое восстановление сеанса (0-RTT)</li>
+              <li>смена сети (Wi-Fi → LTE) <b>без разрыва соединения</b></li>
+            </ul>
+            <div class="card card-accent-4">
+              <h4>Вывод</h4>
+              <p>TCP и UDP — базовые примитивы; современные протоколы комбинируют их свойства</p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- 23 · ДЕМОНСТРАЦИЯ -->
+      <section>
+        <p class="label">Демонстрация</p>
+        <h2>Утилита netcat: TCP в терминале</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <pre style="width: 100%;"><code class="language-bash" data-trim># терминал 1 — сервер: ожидание подключений на порту 8080
+nc -l 8080
+
+# терминал 2 — клиент: установка соединения и обмен строками
+nc 127.0.0.1 8080</code></pre>
+
+        <div class="chip-row" style="margin-top: var(--space-md);">
+          <span class="chip">голый HTTP: <b>telnet example.com 80</b> → <b>GET / HTTP/1.1</b></span>
+          <span class="chip">анализ: <b>Wireshark</b>, фильтр <b>tcp.flags.syn==1</b></span>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Минимальный сетевой обмен — <span class="highlight-2">два процесса и текст</span>.</p>
+      </section>
+
+      <!-- 24 · КОНСПЕКТ -->
+      <section>
+        <p class="label">Конспект</p>
+        <h2>Ключевые определения</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md); column-gap: var(--space-lg); row-gap: var(--space-md);">
+          <div>
+            <h4 class="text-accent-1">Сокет</h4>
+            <p class="text-secondary">конечная точка соединения: IP-адрес + порт</p>
+          </div>
+          <div>
+            <h4 class="text-accent-1">Соединение</h4>
+            <p class="text-secondary">четвёрка: IP и порт клиента, IP и порт сервера</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Порт</h4>
+            <p class="text-secondary">16-битный номер процесса внутри узла (0–65535)</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Сегмент</h4>
+            <p class="text-secondary">единица данных TCP с заголовком от 20 байт</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Дейтаграмма</h4>
+            <p class="text-secondary">самостоятельная единица UDP; границы сохраняются</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Ретрансмиссия</h4>
+            <p class="text-secondary">повторная передача неподтверждённых данных</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">Рукопожатие</h4>
+            <p class="text-secondary">трёхшаговое согласование параметров соединения</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">Окно</h4>
+            <p class="text-secondary">допустимый объём данных «в полёте» без подтверждения</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 25 · ИТОГ -->
+      <section>
+        <p class="label">Итоги</p>
+        <h2>Три главных вывода</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Сокет = IP + порт</h4>
+            <p>интерфейс между приложением и транспортным уровнем; единый стандарт с 1983 года</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">TCP — с гарантиями</h4>
+            <p>соединение, порядок, восстановление потерь; плата — задержки</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">UDP — оперативный</h4>
+            <p>без соединения и гарантий; минимальные задержки и накладные расходы</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Данные должны быть доставлены <span class="highlight-1">полностью</span> — или <span class="highlight-3">оперативно</span>?</p>
       </section>
 
     </div>
