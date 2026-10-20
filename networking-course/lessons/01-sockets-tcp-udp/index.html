@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сетевое программирование — Урок 1. Сокеты, TCP и UDP</title>
+
+  <!-- Reveal.js (вендорено, работает офлайн) -->
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="vendor/reveal/plugin/highlight/monokai.css">
+
+  <!-- Тема курса -->
+  <link rel="stylesheet" href="theme/course-dark.css">
+
+  <!-- Шрифты локально (кириллица + латиница, офлайн) -->
+  <link rel="stylesheet" href="vendor/fonts/fonts.css">
+</head>
+<body>
+
+  <div class="slide-footer">Сетевое программирование</div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- 1 · ТИТУЛ -->
+      <section class="centered">
+        <p class="label">Сетевое программирование · Урок 1</p>
+        <h1>Сокеты, <span class="text-accent-1">TCP</span> и <span class="text-accent-3">UDP</span></h1>
+        <div class="bar"></div>
+        <p class="lead">Как программы общаются по сети — от Berkeley Sockets до QUIC</p>
+        <aside class="notes">
+          [ПРИВЕТСТВИЕ] План пары: сначала что такое сокеты и как через них пишут программы, потом два транспортных протокола — TCP и UDP, в конце сравним и решим, когда что выбирать.
+
+          Подчеркнуть механику: основная линия идёт вправо, но у некоторых слайдов есть «глубина» — стрелка вниз показывает дополнительные факты, которые рассказываю по желанию, в зависимости от темпа группы.
+        </aside>
+      </section>
+
+      <!-- 2 · РАЗОГРЕВ -->
+      <section class="centered">
+        <p class="label">Разогрев</p>
+        <p class="impact">Браузер, мессенджер и онлайн-игра<br>— всё это <span class="highlight-1">сокеты</span>.</p>
+        <div class="grid-3" style="margin-top: var(--space-lg); text-align: left;">
+          <div class="card">
+            <h4>Браузер</h4>
+            <p>страницы по <b class="text-accent-1">HTTP</b> поверх TCP</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4>Мессенджер</h4>
+            <p>сообщения по <b class="text-accent-2">TCP</b></p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>Онлайн-игра</h4>
+            <p>позиции игроков по <b class="text-accent-3">UDP</b></p>
+          </div>
+        </div>
+        <aside class="notes">
+          [ВОПРОС В ЗАЛ] Кто играет онлайн? Кто сегодня открывал браузер? Всё это — одно и то же: две программы обменялись байтами через сеть.
+
+          К концу пары каждый будет понимать, как это устроено изнутри — и сам напишет сервер на Java на практикуме.
+        </aside>
+      </section>
+
+      <!-- 3 · СОКЕТ = IP + ПОРТ  (вертикальный стек: + история Berkeley) -->
+      <section>
+        <section>
+          <p class="label">Основы</p>
+          <h2>Сокет = IP-адрес + порт</h2>
+          <div class="bar"></div>
+
+          <div class="ep-row" style="margin: var(--space-md) 0;">
+            <div class="ep-card">
+              <div class="ep-role">Клиент</div>
+              <div class="ep-addr">192.168.1.10<span class="port">:52341</span></div>
+            </div>
+            <div class="net-link"><span class="net-label">интернет</span></div>
+            <div class="ep-card">
+              <div class="ep-role">Сервер</div>
+              <div class="ep-addr">93.184.216.34<span class="port">:443</span></div>
+            </div>
+          </div>
+
+          <ul>
+            <li><b>IP-адрес</b> — <span class="highlight-5">где</span>: какой компьютер в сети</li>
+            <li><b>порт</b> — <span class="highlight-3">кому</span>: какая программа ждёт данные (0–65535)</li>
+          </ul>
+
+          <div class="chip-row" style="margin-top: var(--space-md);">
+            <span class="chip"><b>80</b> HTTP</span>
+            <span class="chip"><b>443</b> HTTPS</span>
+            <span class="chip"><b>25</b> SMTP</span>
+            <span class="chip"><b>53</b> DNS</span>
+          </div>
+
+          <aside class="notes">
+            Аналогия: IP-адрес — адрес дома, порт — номер квартиры. Письмо дойдёт до дома, а квартиру выбирает порт.
+
+            Клиентский порт обычно случайный (динамический, 49152–65535), серверный — известный заранее: 443 для HTTPS, 80 для HTTP.
+
+            [ЕСЛИ ЕСТЬ ВРЕМЯ] нажать ↓ и рассказать историю 1983 года — студентам заходит.
+          </aside>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>1983: всё началось с BSD UNIX</h2>
+          <div class="deep-rule"></div>
+          <div class="grid-1-2">
+            <ul>
+              <li>Berkeley Sockets вошли в <b>BSD 4.2</b> — их написал <b>Билл Джой</b> (будущий основатель Sun)</li>
+              <li>Идея Unix: <span class="highlight-5">«всё есть файл»</span> — сеть как чтение и запись дескриптора</li>
+            </ul>
+            <div class="card card-accent-4">
+              <h4>40 лет без изменений</h4>
+              <p>Один и тот же API прожил эпохи:<br><span class="text-accent-1">C → C++ → Java → Python → Go</span></p>
+              <p style="margin-top: 1em;">socket — англ. <em>«разъём»</em>: воткнул провод — есть соединение</p>
+            </div>
+          </div>
+          <aside class="notes">
+            История для настроения: 1983 год, Билл Джой пишет сокеты для Berkeley UNIX, заодно TCP/IP. Через это «всё есть файл» — сеть как файловый дескриптор.
+
+            Именно поэтому socket API везде одинаковый: Java Socket, Python socket — это обёртки над тем самым API из 1983 года.
+          </aside>
+        </section>
+      </section>
+
+      <!-- 4 · ЖИЗНЕННЫЙ ЦИКЛ  (вертикальный стек: + Java-код) -->
+      <section>
+        <section>
+          <p class="label">Socket API</p>
+          <h2>Жизненный цикл: сервер и клиент</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <div class="flow-lane fragment" style="margin-bottom: var(--space-lg);">
+            <span class="lane-title">Сервер</span>
+            <span class="flow-pill">socket</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">bind</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">listen</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">accept</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">recv / send</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">close</span>
+          </div>
+
+          <div class="flow-lane fragment">
+            <span class="lane-title">Клиент</span>
+            <span class="flow-pill">socket</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">connect</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">send / recv</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">close</span>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Одни и те же шаги — в любом языке: C, Java, Python</p>
+
+          <aside class="notes">
+            Пройти верхнюю линию: bind — «занять порт», listen — «встать в очередь ожидания», accept — «взять трубку».
+
+            [FRAGMENT] Клиент проще: socket → connect — и уже можно слать байты.
+
+            [ЕСЛИ ГРУППА СИЛЬНАЯ] нажать ↓ и показать Java-код целиком; слабой группе — показать на практикуме.
+          </aside>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Тот же echo-сервер на Java</h2>
+          <div class="deep-rule"></div>
+          <pre style="width: 100%;"><code class="language-java" data-trim>try (ServerSocket server = new ServerSocket(8080)) {  // bind + listen
+    System.out.println("Жду клиента на :8080");
+    while (true) {
+        Socket client = server.accept();            // ждём соединения
+
+        new Thread(() -> {                          // каждому клиенту — поток
+            try (Socket c = client) {
+                var in  = c.getInputStream();       // recv
+                var out = c.getOutputStream();      // send
+                int b;
+                while ((b = in.read()) != -1) {
+                    out.write(b);                   // эхо-ответ
+                }
+            } catch (IOException e) { /* клиент ушёл */ }
+        }).start();
+    }
+}</code></pre>
+          <aside class="notes">
+            Обратить внимание: ServerSocket прячет socket+bind+listen в один вызов конструктора.
+
+            Этот код — заготовка ПР №60: на практикуме соберём его с нуля шаг за шагом и проверим через telnet.
+          </aside>
+        </section>
+      </section>
+
+      <!-- 5 · TCP HANDSHAKE  (вертикальный стек: + заголовок сегмента) -->
+      <section>
+        <section>
+          <p class="label">Транспортный уровень</p>
+          <h2>TCP: рукопожатие перед разговором</h2>
+          <div class="bar"></div>
+
+          <svg viewBox="0 0 1000 620" style="width: 100%; max-width: 1100px; margin: 0 auto; display: block;">
+            <defs>
+              <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#7aa2f7"/>
+              </marker>
+              <marker id="arr-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#bb9af7"/>
+              </marker>
+              <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9ece6a"/>
+              </marker>
+            </defs>
+
+            <!-- участники -->
+            <rect x="140" y="16" width="220" height="62" rx="12" fill="#24283b" stroke="#7aa2f7" stroke-width="2"/>
+            <text x="250" y="55" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="30" font-weight="700" fill="#c0caf5">Клиент</text>
+            <rect x="640" y="16" width="220" height="62" rx="12" fill="#24283b" stroke="#bb9af7" stroke-width="2"/>
+            <text x="750" y="55" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="30" font-weight="700" fill="#c0caf5">Сервер</text>
+
+            <!-- линии жизни -->
+            <line x1="250" y1="78" x2="250" y2="600" stroke="#565f89" stroke-width="2" stroke-dasharray="6 8"/>
+            <line x1="750" y1="78" x2="750" y2="600" stroke="#565f89" stroke-width="2" stroke-dasharray="6 8"/>
+
+            <!-- SYN -->
+            <line x1="250" y1="185" x2="735" y2="185" stroke="#7aa2f7" stroke-width="3" marker-end="url(#arr-blue)"/>
+            <text x="495" y="165" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="30" font-weight="700" fill="#7aa2f7">SYN</text>
+            <text x="495" y="220" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#565f89">seq = x · «хочу соединиться»</text>
+
+            <!-- SYN+ACK -->
+            <line x1="750" y1="315" x2="265" y2="315" stroke="#bb9af7" stroke-width="3" marker-end="url(#arr-violet)"/>
+            <text x="495" y="295" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="30" font-weight="700" fill="#bb9af7">SYN + ACK</text>
+            <text x="495" y="350" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#565f89">seq = y, ack = x+1 · «принято, я тоже готов»</text>
+
+            <!-- ACK -->
+            <line x1="250" y1="445" x2="735" y2="445" stroke="#7aa2f7" stroke-width="3" marker-end="url(#arr-blue)"/>
+            <text x="495" y="425" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="30" font-weight="700" fill="#7aa2f7">ACK</text>
+            <text x="495" y="480" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#565f89">ack = y+1 · «подтверждаю, поехали»</text>
+
+            <!-- данные -->
+            <line x1="250" y1="555" x2="735" y2="555" stroke="#9ece6a" stroke-width="3" stroke-dasharray="10 8" marker-end="url(#arr-green)"/>
+            <text x="495" y="535" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="30" font-weight="700" fill="#9ece6a">данные</text>
+          </svg>
+
+          <aside class="notes">
+            Аналогия телефонного звонка: «Алло?» — «Да, слушаю» — «Отлично, начинаем». Только роли SYM/ACK.
+
+            Три пакета — и только потом данные. Зато дальше TCP гарантирует: всё дойдёт и в правильном порядке.
+
+            [ДЕМО] Если есть время — открыть Wireshark и показать живой handshake. На ↓ — разбор заголовка сегмента.
+          </aside>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Что внутри сегмента TCP</h2>
+          <div class="deep-rule"></div>
+          <div class="hdr-grid">
+            <div class="hcell"><b>Порт источника</b><span class="bits">16 бит</span></div>
+            <div class="hcell"><b>Порт назначения</b><span class="bits">16 бит</span></div>
+            <div class="hcell span-2 hot"><b>Порядковый номер (SEQ)</b><span class="bits">32 бита · номер байта в потоке</span></div>
+            <div class="hcell span-2 hot"><b>Подтверждение (ACK)</b><span class="bits">32 бита · «дошло до сюда»</span></div>
+            <div class="hcell flag"><b>SYN · ACK · FIN · RST</b><span class="bits">флаги</span></div>
+            <div class="hcell"><b>Окно (window)</b><span class="bits">сколько ещё влезет</span></div>
+            <div class="hcell"><b>Контрольная сумма</b><span class="bits">целостность</span></div>
+            <div class="hcell"><b>Данные приложения…</b><span class="bits">payload</span></div>
+          </div>
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Именно эти поля вы увидите в Wireshark на практикуме</p>
+          <aside class="notes">
+            Связать с предыдущим слайдом: SYN и ACK на диаграмме — это биты в поле флагов; seq/ack из «рукопожатия» живут в синих ячейках.
+
+            Окно — «сколько ещё влезет»: получатель сообщает отправителю свой буфер. Это управление потоком.
+          </aside>
+        </section>
+      </section>
+
+      <!-- 6 · TCP vs UDP -->
+      <section>
+        <p class="label">Итог</p>
+        <h2>TCP или UDP?</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card vs-col">
+            <h3 class="text-accent-1">TCP — надёжный</h3>
+            <ul>
+              <li>соединение: handshake перед данными</li>
+              <li>всё доставляется, в правильном порядке</li>
+              <li>потерялось — <span class="highlight-2">перешлёт заново</span></li>
+              <li>HTTP, почта, файлы, мессенджеры</li>
+            </ul>
+          </div>
+          <div class="card card-accent-3 vs-col">
+            <h3 class="text-accent-3">UDP — быстрый</h3>
+            <ul>
+              <li>без соединения: сразу шлём</li>
+              <li>без гарантий доставки и порядка</li>
+              <li>зато <span class="highlight-3">никаких задержек</span></li>
+              <li>DNS, игры, стриминг, VoIP</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Выбор — <span class="highlight-1">надёжность</span> против <span class="highlight-3">скорости</span>.</p>
+
+        <aside class="notes">
+          [ВОПРОС В ЗАЛ] Что выбрать для скачивания файла? А для позиции игрока в шутере, где важнее свежесть, чем полнота?
+
+          Упомянуть: HTTP/3 поверх QUIC — это UDP, который научился надёжности. Всё возвращается.
+
+          Анонс: на практикуме ПР №60 пишем echo-сервер на Java — тот код с глубокого слайда.
+        </aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="vendor/reveal/reveal.js"></script>
+  <script src="vendor/reveal/plugin/highlight/highlight.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      center: true,
+      transition: 'slide',
+      transitionSpeed: 'default',
+      backgroundTransition: 'slide',
+      width: 1920,
+      height: 1080,
+      margin: 0.08,
+      minScale: 0.2,
+      maxScale: 2.0,
+      controls: true,
+      progress: true,
+      slideNumber: 'h/v',
+      plugins: [RevealHighlight]
+    });
+  </script>
+</body>
+</html>
