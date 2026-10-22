@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Транспортные протоколы и форматы сообщений — Инструментальные средства разработки ПО</title>
+
+  <!-- Reveal.js (вендорено, работает офлайн) -->
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="vendor/reveal/plugin/highlight/monokai.css">
+
+  <!-- Тема курса -->
+  <link rel="stylesheet" href="theme/course-dark.css">
+
+  <!-- Шрифты локально (кириллица + латиница, офлайн) -->
+  <link rel="stylesheet" href="vendor/fonts/fonts.css">
+</head>
+<body>
+
+  <div class="slide-footer">Инструментальные средства разработки ПО</div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- 1 · ТИТУЛ -->
+      <section class="centered">
+        <p class="label">Инструментальные средства разработки ПО</p>
+        <h1>Транспортные протоколы<br>и <span class="text-accent-1">форматы сообщений</span></h1>
+        <div class="bar"></div>
+        <p class="lead">Обмен данными между программными модулями: доставка и сериализация</p>
+      </section>
+
+      <!-- 2 · ЗАДАЧА ИНТЕГРАЦИИ -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>Задача интеграции модулей</h2>
+        <div class="bar"></div>
+
+        <div class="grid-4" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4>Приложение</h4>
+            <p>↔ API сервера<br><span class="text-primary">HTTPS + JSON</span></p>
+          </div>
+          <div class="card card-accent-2">
+            <h4>Сервис ↔ Сервис</h4>
+            <p>микросервисная архитектура<br><span class="text-primary">REST, gRPC</span></p>
+          </div>
+          <div class="card card-accent-5">
+            <h4>Корпоративные системы</h4>
+            <p>учёт ↔ CRM ↔ склад<br><span class="text-primary">очереди, файлы</span></p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>Компоненты модуля</h4>
+            <p>внутренние сообщения<br><span class="text-primary">события, колбэки</span></p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Интеграция — <span class="highlight-1">соглашение</span> двух модулей об обмене данными.</p>
+      </section>
+
+      <!-- 3 · ТРИ УРОВНЯ ДОГОВОРА -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>Три уровня договора</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Транспорт</h4>
+            <p><span class="text-primary">как доставить</span><br>HTTP · WebSocket · очереди сообщений</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Формат</h4>
+            <p><span class="text-primary">как записать</span><br>JSON · XML · CSV · Protobuf</p>
+          </div>
+          <div class="card card-accent-4">
+            <h4 class="text-accent-4">Семантика</h4>
+            <p><span class="text-primary">что значат поля</span><br>контракт, схема, версии</p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Транспорт и формат меняются относительно легко; семантика — самый устойчивый уровень договора</p>
+      </section>
+
+      <!-- 4 · HTTP КАК ТРАНСПОРТ -->
+      <section>
+        <p class="label">Транспорт · HTTP</p>
+        <h2>HTTP: транспорт запрос-ответ</h2>
+        <div class="bar"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">клиент</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">запрос: метод · путь · заголовки · тело</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">сервер</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">ответ: статус · заголовки · тело</span>
+        </div>
+
+        <div class="grid-4" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4>Методы</h4>
+            <p><span class="text-primary">GET · POST · PUT · DELETE</span><br>семантика действия</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4>Статусы</h4>
+            <p><span class="text-primary">2xx успех · 4xx ошибка клиента · 5xx ошибка сервера</span></p>
+          </div>
+          <div class="card card-accent-5">
+            <h4>Заголовки</h4>
+            <p><span class="text-primary">Content-Type · Accept · Authorization</span><br>метаданные обмена</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>HTTPS</h4>
+            <p>шифрование и подлинность — <span class="text-primary">норма по умолчанию</span></p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Каждый запрос независим: протокол не хранит состояние соединения</p>
+      </section>
+
+      <!-- 5 · REST  (+ deep: идемпотентность и коды) -->
+      <section>
+        <section>
+          <p class="label">Транспорт · HTTP</p>
+          <h2>REST: ресурсы и действия</h2>
+          <div class="bar"></div>
+
+          <div class="hdr-grid" style="margin-top: var(--space-md);">
+            <div class="hcell"><b>Действие</b></div>
+            <div class="hcell"><b>Метод</b></div>
+            <div class="hcell span-2" style="text-align: left;"><b>Пример</b></div>
+            <div class="hcell">создать</div>
+            <div class="hcell flag"><b>POST</b></div>
+            <div class="hcell span-2" style="text-align: left; font-family: var(--font-mono);">POST /orders</div>
+            <div class="hcell">прочитать</div>
+            <div class="hcell flag"><b>GET</b></div>
+            <div class="hcell span-2" style="text-align: left; font-family: var(--font-mono);">GET /orders/42</div>
+            <div class="hcell">обновить</div>
+            <div class="hcell flag"><b>PUT</b></div>
+            <div class="hcell span-2" style="text-align: left; font-family: var(--font-mono);">PUT /orders/42</div>
+            <div class="hcell">удалить</div>
+            <div class="hcell flag"><b>DELETE</b></div>
+            <div class="hcell span-2" style="text-align: left; font-family: var(--font-mono);">DELETE /orders/42</div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Ресурс — существительное (<code>/orders/42</code>); метод — действие над ним</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Идемпотентность и коды ответов</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Идемпотентность</b>: повтор запроса не меняет результат. GET, PUT, DELETE — идемпотентны; POST — нет (двойной POST = два заказа)</li>
+            <li>Поэтому повторные попытки безопасны только для идемпотентных методов</li>
+            <li><b>4xx</b> — ошибка на стороне клиента: повтор без изменения запроса бессмыслен (400, 401, 403, 404)</li>
+            <li><b>5xx</b> — ошибка на сервере: повтор позже оправдан (500, 503)</li>
+          </ul>
+          <div class="card card-accent-4" style="margin-top: var(--space-md);">
+            <h4>Правило интеграции</h4>
+            <p>Получил 5xx — повтори с задержкой; получил 4xx — исправляй запрос, а не жди чуда</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- 6 · WEBSOCKET -->
+      <section>
+        <p class="label">Транспорт</p>
+        <h2>WebSocket: двусторонний канал</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">HTTP: полудуплекс</h4>
+            <ul>
+              <li>обмен инициирует <b>только клиент</b></li>
+              <li>сервер не может «толкнуть» данные сам</li>
+              <li>выход: опрос (polling) — расточительно</li>
+            </ul>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">WebSocket: полный дуплекс</h4>
+            <ul>
+              <li>одно соединение TCP — <b>обе стороны шлют кадры</b></li>
+              <li>устанавливается через HTTP-рукопожатие</li>
+              <li>минимальные накладные расходы</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Применение: чаты и уведомления, котировки биржи, состояние в реальном времени</p>
+      </section>
+
+      <!-- 7 · ОЧЕРЕДИ  (+ deep: брокеры) -->
+      <section>
+        <section>
+          <p class="label">Транспорт · Очереди</p>
+          <h2>Очереди сообщений</h2>
+          <div class="bar bar-accent-3"></div>
+
+          <div class="flow-lane" style="margin: var(--space-md) 0;">
+            <span class="flow-pill">производитель</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">брокер: очередь</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">потребитель</span>
+          </div>
+
+          <ul>
+            <li><b>Развязка</b>: модули не обращаются друг к другу напрямую — только к брокеру</li>
+            <li><b>Асинхронность</b>: потребитель обрабатывает, когда готов; пик сглаживается очередью</li>
+            <li><b>Гарантии</b>: сообщение сохранится, даже если получатель временно недоступен</li>
+          </ul>
+
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Брокеры: RabbitMQ, Apache Kafka, ActiveMQ</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>RabbitMQ и Kafka: две философии</h2>
+          <div class="deep-rule"></div>
+          <div class="grid-2">
+            <div class="card">
+              <h4 class="text-accent-1">RabbitMQ</h4>
+              <p><span class="text-primary">маршрутизация задач</span>: сообщение уходит одному потребителю и удаляется после подтверждения</p>
+            </div>
+            <div class="card card-accent-2">
+              <h4 class="text-accent-2">Kafka</h4>
+              <p><span class="text-primary">распределённый журнал</span>: сообщения хранятся; потребители читают поток и могут перечитать</p>
+            </div>
+          </div>
+          <ul style="margin-top: var(--space-md);">
+            <li><b>Гарантии доставки</b>: at-most-once (можно потерять), at-least-once (могут быть дубли), exactly-once (дорого)</li>
+            <li>At-least-once + <b>идемпотентный потребитель</b> — практический стандарт</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 8 · СИНХРОННО VS АСИНХРОННО  (+ deep: надёжность) -->
+      <section>
+        <section>
+          <p class="label">Транспорт</p>
+          <h2>Синхронно или асинхронно</h2>
+          <div class="bar"></div>
+
+          <div class="grid-2" style="margin-top: var(--space-md);">
+            <div class="card vs-col">
+              <h3 class="text-accent-1">Синхронно · HTTP</h3>
+              <ul>
+                <li>ответ — немедленно</li>
+                <li>обе стороны должны быть <span class="text-primary">доступны одновременно</span></li>
+                <li>просто отлаживать: запрос и ответ рядом</li>
+              </ul>
+            </div>
+            <div class="card card-accent-3 vs-col">
+              <h3 class="text-accent-3">Асинхронно · очередь</h3>
+              <ul>
+                <li>результат — позже, через другое сообщение</li>
+                <li><span class="text-primary">устойчивость</span> к недоступности и пикам</li>
+                <li>сложнее трассировать цепочку</li>
+              </ul>
+            </div>
+          </div>
+
+          <p class="impact" style="margin-top: var(--space-lg);">Нужен <span class="highlight-1">ответ</span> — или <span class="highlight-3">уведомление о событии</span>?</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Надёжность асинхронного обмена</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Таймауты</b>: ожидание ответа не бесконечно — иначе модуль «зависает» целиком</li>
+            <li><b>Повторные попытки</b>: экспоненциальная задержка (1 c → 2 c → 4 c), лимит попыток</li>
+            <li><b>Идемпотентный потребитель</b>: повторная доставка не ломает результат (проверка «уже обработано?»)</li>
+            <li><b>Dead-letter очередь</b>: куда попадают сообщения, которые не удалось обработать после всех попыток</li>
+          </ul>
+          <div class="card card-accent-4" style="margin-top: var(--space-md);">
+            <h4>Принцип</h4>
+            <p>Отказ — не исключение, а плановый случай: обмен обязан переживать недоступность</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- 9 · ВЫБОР ТРАНСПОРТА -->
+      <section>
+        <p class="label">Транспорт</p>
+        <h2>Выбор транспорта</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div class="hdr-grid" style="grid-template-columns: 1fr 320px; margin-top: var(--space-md);">
+          <div class="hcell" style="text-align: left;"><b>Сценарий обмена</b></div>
+          <div class="hcell"><b>Транспорт</b></div>
+          <div class="hcell" style="text-align: left;">запрос — немедленный ответ</div>
+          <div class="hcell flag"><b>HTTP / REST</b></div>
+          <div class="hcell" style="text-align: left;">поток событий, много подписчиков</div>
+          <div class="hcell flag"><b>Kafka</b></div>
+          <div class="hcell" style="text-align: left;">задачи с маршрутами и подтверждением обработки</div>
+          <div class="hcell flag"><b>RabbitMQ</b></div>
+          <div class="hcell" style="text-align: left;">двусторонний канал в реальном времени</div>
+          <div class="hcell flag"><b>WebSocket</b></div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">В одном проекте транспорты комбинируются: REST для внешних вызовов, очередь — для внутренних событий</p>
+      </section>
+
+      <!-- 10 · СЕРИАЛИЗАЦИЯ -->
+      <section>
+        <p class="label">Форматы</p>
+        <h2>Сериализация: объект ↔ сообщение</h2>
+        <div class="bar"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">объект Java</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">сериализация</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">байты: JSON / XML / …</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">сеть</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">десериализация</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">объект Java</span>
+        </div>
+
+        <ul>
+          <li><b>Формат</b> — договор о том, как объект превращается в байты и обратно</li>
+          <li>стороны могут быть написаны на <span class="highlight-1">разных языках</span> — формат это neutral ground</li>
+        </ul>
+      </section>
+
+      <!-- 11 · JSON  (+ deep: JSON Schema) -->
+      <section>
+        <section>
+          <p class="label">Форматы · JSON</p>
+          <h2>JSON: текстовый формат по умолчанию</h2>
+          <div class="bar"></div>
+
+          <pre style="width: 100%;"><code class="language-json" data-trim>{
+  "id": 42,
+  "customer": "Иванов И. И.",
+  "items": [
+    { "sku": "A-100", "qty": 2, "price": 9.99 }
+  ],
+  "paid": false
+}</code></pre>
+
+          <div class="chip-row" style="margin-top: var(--space-sm);">
+            <span class="chip">типы: <b>объект · массив · строка · число · bool · null</b></span>
+            <span class="chip">Java: <b>Jackson / Gson</b></span>
+            <span class="chip">Content-Type: <b>application/json</b></span>
+          </div>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>JSON Schema: контракт полей</h2>
+          <div class="deep-rule"></div>
+          <pre style="width: 100%;"><code class="language-json" data-trim>{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id":    { "type": "integer" },
+    "customer": { "type": "string", "minLength": 1 }
+  },
+  "required": ["id", "customer"]
+}</code></pre>
+          <ul style="margin-top: var(--space-sm);">
+            <li>схема описывает <b>поля, типы и обязательность</b> — договор, проверяемый автоматически</li>
+            <li>валидация на входе: сообщение без обязательного поля отклоняется <span class="text-primary">до</span> обработки</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 12 · XML  (+ deep: XSD и SOAP) -->
+      <section>
+        <section>
+          <p class="label">Форматы · XML</p>
+          <h2>XML: размеченные документы</h2>
+          <div class="bar bar-accent-5"></div>
+
+          <pre style="width: 100%;"><code class="language-xml" data-trim>&lt;order id="42"&gt;
+  &lt;customer&gt;Иванов И. И.&lt;/customer&gt;
+  &lt;items&gt;
+    &lt;item sku="A-100" qty="2" price="9.99"/&gt;
+  &lt;/items&gt;
+  &lt;paid&gt;false&lt;/paid&gt;
+&lt;/order&gt;</code></pre>
+
+          <ul style="margin-top: var(--space-sm);">
+            <li><b>Элементы</b> — содержимое данных; <b>атрибуты</b> — метаданные (id, sku)</li>
+            <li>строгая вложенность, пространства имён для смешивания словарей</li>
+            <li>Java: <b>JAXB</b>; живёт в конфигурациях (<code>pom.xml</code>), SOAP, документообороте</li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>XSD и SOAP</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>XSD</b> — схема XML: допустимые элементы, типы, порядок, кратность. Валидация документа — до обработки</li>
+            <li><b>SOAP</b> — протокол поверх XML: жёсткий конверт (<code>Envelope → Header → Body</code>), встроенные ошибки (<code>Fault</code>), WSDL-контракт</li>
+            <li>Стандарт корпоративного мира: банки, госструктуры, платёжные шлюзы</li>
+          </ul>
+          <div class="card card-accent-4" style="margin-top: var(--space-md);">
+            <h4>Итог</h4>
+            <p>XML тяжелей JSON, но строже: схема и конверт принудительны</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- 13 · CSV -->
+      <section>
+        <p class="label">Форматы</p>
+        <h2>CSV: плоские таблицы</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <pre style="width: 100%;"><code class="language-text" data-trim>sku;qty;price
+A-100;2;9.99
+B-200;1;19.50</code></pre>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-2">Когда достаточно</h4>
+            <p>табличные выгрузки, отчёты, загрузка справочников; читается Excel</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Ограничения</h4>
+            <p>нет типов и вложенности; делимитеры и экранирование — источник ошибок</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 14 · PROTOBUF  (+ deep: сравнение размеров) -->
+      <section>
+        <section>
+          <p class="label">Форматы · Бинарные</p>
+          <h2>Protobuf: схема и компактность</h2>
+          <div class="bar"></div>
+
+          <pre style="width: 100%;"><code class="language-protobuf" data-trim>message Order {
+  int64  id       = 1;
+  string customer = 2;
+  repeated Item items = 3;
+}
+
+message Item {
+  string sku   = 1;
+  int32  qty   = 2;
+  double price = 3;
+}</code></pre>
+
+          <ul style="margin-top: var(--space-sm);">
+            <li><b>Схема первична</b>: код и контракт генерируются из <code>.proto</code></li>
+            <li>каждое поле имеет <span class="highlight-1">номер</span> — бинарная запись компактна и устойчива к изменениям схемы</li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Размер и совместимость версий</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Одно и то же сообщение (заказ из примера):<br><b>JSON ≈ 120 байт · XML ≈ 180 байт · Protobuf ≈ 45 байт</b></li>
+            <li>Номера полей — это контракт: <b>добавлять</b> новые поля можно, <b>менять и удалять</b> номера нельзя</li>
+            <li>Старый код просто игнорирует неизвестные поля — обратная совместимость «из коробки»</li>
+          </ul>
+          <div class="card card-accent-4" style="margin-top: var(--space-md);">
+            <h4>gRPC</h4>
+            <p>Протокол вызова удалённых процедур: Protobuf + HTTP/2. Стандарт внутренней связи микросервисов</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- 15 · СРАВНЕНИЕ ФОРМАТОВ -->
+      <section>
+        <p class="label">Форматы</p>
+        <h2>Сравнение форматов</h2>
+        <div class="bar"></div>
+
+        <div class="hdr-grid" style="margin-top: var(--space-md);">
+          <div class="hcell"><b>Формат</b></div>
+          <div class="hcell"><b>Читаемость</b></div>
+          <div class="hcell"><b>Размер</b></div>
+          <div class="hcell"><b>Схема</b></div>
+          <div class="hcell"><b>Применение</b></div>
+          <div class="hcell flag"><b>JSON</b></div>
+          <div class="hcell">высокая</div>
+          <div class="hcell">средний</div>
+          <div class="hcell">JSON Schema</div>
+          <div class="hcell">REST API</div>
+          <div class="hcell flag"><b>XML</b></div>
+          <div class="hcell">высокая</div>
+          <div class="hcell">большой</div>
+          <div class="hcell">XSD</div>
+          <div class="hcell">SOAP, документы</div>
+          <div class="hcell flag"><b>CSV</b></div>
+          <div class="hcell">высокая</div>
+          <div class="hcell">малый</div>
+          <div class="hcell">нет</div>
+          <div class="hcell">таблицы, выгрузки</div>
+          <div class="hcell flag"><b>Protobuf</b></div>
+          <div class="hcell">нет (бинарный)</div>
+          <div class="hcell">малый</div>
+          <div class="hcell">.proto</div>
+          <div class="hcell">gRPC, внутренняя связь</div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Человек читает <span class="highlight-1">JSON</span>, машина — <span class="highlight-5">Protobuf</span>.</p>
+      </section>
+
+      <!-- 16 · JAVA: HTTP-КЛИЕНТ -->
+      <section>
+        <p class="label">Java</p>
+        <h2>HTTP-клиент и JSON в Java</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <pre style="width: 100%;"><code class="language-java" data-trim>HttpClient client = HttpClient.newHttpClient();          // Java 11+
+
+HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create("https://api.example.com/orders/42"))
+        .header("Accept", "application/json")
+        .build();
+
+HttpResponse&lt;String&gt; response =
+        client.send(request, HttpResponse.BodyHandlers.ofString());
+
+Order order = new ObjectMapper()                       // Jackson
+        .readValue(response.body(), Order.class);</code></pre>
+
+        <div class="chip-row" style="margin-top: var(--space-sm);">
+          <span class="chip"><b>HttpClient</b> — запрос-ответ</span>
+          <span class="chip"><b>ObjectMapper</b> — JSON ↔ объект</span>
+          <span class="chip">serialization в одну строку: <b>writeValueAsString(order)</b></span>
+        </div>
+      </section>
+
+      <!-- 17 · КОНТРАКТ И ВЕРСИИ -->
+      <section>
+        <p class="label">Семантика</p>
+        <h2>Контракт и версионирование API</h2>
+        <div class="bar bar-accent-4"></div>
+
+        <ul>
+          <li><b>API-first</b>: сначала договор (схема), потом реализация — схема документирует и проверяет</li>
+          <li><b>Версии в пути</b>: <code>/v1/orders</code> → <code>/v2/orders</code>; новая версия не ломает старых клиентов</li>
+          <li><b>Обратная совместимость</b>: добавлять поля — можно; удалять и переименовывать — нельзя</li>
+        </ul>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Контракт <span class="highlight-4">труднее изменить</span>, чем код, — его читают чужие программы.</p>
+      </section>
+
+      <!-- 18 · ДЕМОНСТРАЦИЯ -->
+      <section>
+        <p class="label">Демонстрация</p>
+        <h2>HTTP и JSON в терминале</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <pre style="width: 100%;"><code class="language-bash" data-trim># JSON-ответ публичного сервиса, красиво отформатированный
+curl -s https://httpbin.org/json | python3 -m json.tool
+
+# только заголовки ответа: Content-Type, коды
+curl -sI https://httpbin.org/json</code></pre>
+
+        <div class="chip-row" style="margin-top: var(--space-md);">
+          <span class="chip">POST с телом: <b>curl -d '{"a":1}' -H "Content-Type: application/json" …</b></span>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Транспорт, формат и статусы — <span class="highlight-2">в одном запросе</span>.</p>
+      </section>
+
+      <!-- 19 · КОНСПЕКТ -->
+      <section>
+        <p class="label">Конспект</p>
+        <h2>Ключевые определения</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md); column-gap: var(--space-lg); row-gap: var(--space-md);">
+          <div>
+            <h4 class="text-accent-1">Интеграция</h4>
+            <p class="text-secondary">соглашение модулей об обмене данными: транспорт, формат, семантика</p>
+          </div>
+          <div>
+            <h4 class="text-accent-1">REST</h4>
+            <p class="text-secondary">архитектура поверх HTTP: ресурсы и методы</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Сериализация</h4>
+            <p class="text-secondary">преобразование объекта в байты сообщения и обратно</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Брокер сообщений</h4>
+            <p class="text-secondary">посредник: принимает, хранит и доставляет сообщения</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Идемпотентность</h4>
+            <p class="text-secondary">повтор операции не меняет результат</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Производитель / потребитель</h4>
+            <p class="text-secondary">отправитель сообщений в очередь / их обработчик</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">Контракт</h4>
+            <p class="text-secondary">формальное описание сообщений: схема, версия API</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">WebSocket</h4>
+            <p class="text-secondary">двусторонний канал поверх одного соединения</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 20 · ИТОГ -->
+      <section>
+        <p class="label">Итоги</p>
+        <h2>Три главных вывода</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Транспорт — по модели обмена</h4>
+            <p>запрос-ответ — HTTP; события — очередь; канал — WebSocket</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Формат — по потребителю</h4>
+            <p>читаемость для людей — JSON; компактность для машин — Protobuf</p>
+          </div>
+          <div class="card card-accent-4">
+            <h4 class="text-accent-4">Контракт важнее кода</h4>
+            <p>схема и версии — то, что труднее всего поменять после запуска</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Сначала <span class="highlight-4">договор</span>, потом код.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="vendor/reveal/reveal.js"></script>
+  <script src="vendor/reveal/plugin/highlight/highlight.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      center: true,
+      transition: 'slide',
+      transitionSpeed: 'default',
+      backgroundTransition: 'slide',
+      width: 1920,
+      height: 1080,
+      margin: 0.08,
+      minScale: 0.2,
+      maxScale: 2.0,
+      controls: true,
+      progress: true,
+      slideNumber: 'h/v',
+      plugins: [RevealHighlight]
+    });
+  </script>
+</body>
+</html>
