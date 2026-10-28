@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тестирование программных продуктов — Инструментальные средства разработки ПО</title>
+
+  <!-- Reveal.js (вендорено, работает офлайн) -->
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="vendor/reveal/plugin/highlight/monokai.css">
+
+  <!-- Тема курса -->
+  <link rel="stylesheet" href="theme/course-dark.css">
+
+  <!-- Шрифты локально (кириллица + латиница, офлайн) -->
+  <link rel="stylesheet" href="vendor/fonts/fonts.css">
+</head>
+<body>
+
+  <div class="slide-footer">Инструментальные средства разработки ПО</div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- 1 · ТИТУЛ -->
+      <section class="centered">
+        <p class="label">Инструментальные средства разработки ПО</p>
+        <h1>Тестирование <span class="text-accent-2">программных</span><br><span class="text-accent-2">продуктов</span></h1>
+        <div class="bar"></div>
+        <p class="lead">Ручное и автоматизированное: уровни, методы, организация</p>
+      </section>
+
+      <!-- 2 · ЦЕНА ОШИБКИ -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>Цена дефекта растёт со стадией</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-4" style="margin-top: var(--space-md);">
+          <div>
+            <p class="stat text-accent-2" style="font-size: var(--size-h2);">×1</p>
+            <h4>Требования</h4>
+            <p class="text-secondary">ошибка в документе — исправить текст</p>
+          </div>
+          <div>
+            <p class="stat text-accent-2" style="font-size: var(--size-h2);">×10</p>
+            <h4>Разработка</h4>
+            <p class="text-secondary">пока код у автора — правка локальна</p>
+          </div>
+          <div>
+            <p class="stat text-accent-3" style="font-size: var(--size-h2);">×100</p>
+            <h4>Тестирование</h4>
+            <p class="text-secondary">найти, воспроизвести, вернуть, проверить</p>
+          </div>
+          <div>
+            <p class="stat text-accent-3" style="font-size: var(--size-h2);">×1000</p>
+            <h4>Продакшн</h4>
+            <p class="text-secondary">пользователи, данные, репутация, хотфиксы</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Дефект дешевле <span class="highlight-2">найти рано</span>.</p>
+      </section>
+
+      <!-- 3 · ВЕРИФИКАЦИЯ VS ВАЛИДАЦИЯ -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>Верификация и валидация</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card vs-col">
+            <h3 class="text-accent-1">Верификация</h3>
+            <ul>
+              <li>«Делаем ли продукт <b>правильно</b>?»</li>
+              <li>соответствие <span class="text-primary">спецификации</span>, требованиям</li>
+              <li>инструменты: ревью, тесты, статический анализ</li>
+            </ul>
+          </div>
+          <div class="card card-accent-3 vs-col">
+            <h3 class="text-accent-3">Валидация</h3>
+            <ul>
+              <li>«Делаем ли <b>правильный</b> продукт?»</li>
+              <li>соответствие <span class="text-primary">потребностям пользователя</span></li>
+              <li>инструменты: приёмка, сценарии использования</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 · ПИРАМИДА ТЕСТОВ  (+ deep: трофей) -->
+      <section>
+        <section>
+          <p class="label">Уровни</p>
+          <h2>Пирамида тестов</h2>
+          <div class="bar"></div>
+
+          <div style="margin-top: var(--space-sm);">
+            <div class="card card-accent-3 centered" style="padding: 0.8em 1.6em; max-width: 640px; margin: 0 auto 0.5em;">
+              <h4>System · UI</h4>
+              <p>весь продукт целиком — <span class="text-primary">мало, медленно, дорого</span></p>
+            </div>
+            <div class="card card-accent-5 centered" style="padding: 0.8em 1.6em; max-width: 880px; margin: 0 auto 0.5em;">
+              <h4>Integration</h4>
+              <p>модули вместе — <span class="text-primary">стыки и договорённости</span></p>
+            </div>
+            <div class="card card-accent-2 centered" style="padding: 0.8em 1.6em; max-width: 1120px; margin: 0 auto;">
+              <h4>Unit</h4>
+              <p>отдельные методы и классы — <span class="text-primary">много, быстро, дёшево</span></p>
+            </div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Основание широкое: быстрые unit-тесты гоняются при каждой сборке, верх — редко</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Критика пирамиды: «трофей»</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Пирамида — ориентир 2000-х, родом из мира <b>толстой бизнес-логики</b></li>
+            <li>В приложениях, где ценность — в интеграциях (API, веб), логика тонка: большинство дефектов — <b>на стыках</b></li>
+            <li>«Тестовый трофей»: больше интеграционных тестов, unit — там, где есть что изолировать</li>
+          </ul>
+          <div class="card card-accent-4" style="margin-top: var(--space-md);">
+            <h4>Вывод</h4>
+            <p>Форма набора тестов следует за архитектурой приложения, а не за модой</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- 5 · ВИДЫ ТЕСТИРОВАНИЯ -->
+      <section>
+        <p class="label">Виды</p>
+        <h2>Функциональное и нефункциональное</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Функциональное</h4>
+            <p>что продукт <span class="text-primary">делает</span>: функции, сценарии, правила</p>
+          </div>
+          <div class="card card-accent-5">
+            <h4 class="text-accent-5">Нефункциональное</h4>
+            <p>как он это делает: <span class="text-primary">производительность, безопасность, удобство, совместимость</span></p>
+          </div>
+        </div>
+
+        <div class="chip-row" style="margin-top: var(--space-lg);">
+          <span class="chip"><b>нагрузочное</b> — сколько выдержит</span>
+          <span class="chip"><b>безопасности</b> — что сломает злоумышленник</span>
+          <span class="chip"><b>юзабилити</b> — удобно ли человеку</span>
+        </div>
+      </section>
+
+      <!-- 6 · СТАТИЧЕСКОЕ VS ДИНАМИЧЕСКОЕ  (+ deep: инспекции) -->
+      <section>
+        <section>
+          <p class="label">Методы</p>
+          <h2>Статическое и динамическое</h2>
+          <div class="bar"></div>
+
+          <div class="grid-2" style="margin-top: var(--space-md);">
+            <div class="card vs-col">
+              <h3 class="text-accent-1">Статическое — без запуска</h3>
+              <ul>
+                <li>инспекции и <span class="text-primary">ревью кода</span></li>
+                <li>компилятор: типы, синтаксис</li>
+                <li>анализаторы: линтеры, поиск утечек</li>
+              </ul>
+            </div>
+            <div class="card card-accent-3 vs-col">
+              <h3 class="text-accent-3">Динамическое — запуск</h3>
+              <ul>
+                <li>ручные проверки по чек-листам</li>
+                <li>автоматические прогоны тестов</li>
+                <li>замеры поведения под нагрузкой</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Статический анализ в IDE</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Инспекции IDEA</b>: сотни правил — вероятные null-разыменования, незакрытые ресурсы, избыточный код — прямо при наборе</li>
+            <li><b>SonarLint</b>: тот же класс находок + «code smells» и уязвимости, синхронизация с сервером SonarQube</li>
+            <li>Сильная сторона: находки <b>до первого запуска</b>; слабая — много ложных срабатываний, нужна настройка</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 7 · РУЧНОЕ -->
+      <section>
+        <p class="label">Ручное</p>
+        <h2>Где незаменимы руки</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4>Исследовательское</h4>
+            <p>тестировщик <span class="text-primary">учится продукту</span> и проверяет гипотезы одновременно</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4>Первая проверка фичи</h4>
+            <p>свежий взгляд <span class="text-primary">до написания тестов</span></p>
+          </div>
+          <div class="card card-accent-5">
+            <h4>Удобство и эстетика</h4>
+            <p>«неудобно» — <span class="text-primary">не формализуется</span> в assert</p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Инструменты ручного тестировщика: чек-листы, тест-кейсы, баг-трекер</p>
+      </section>
+
+      <!-- 8 · ТЕСТ-КЕЙС И РЕПОРТ -->
+      <section>
+        <p class="label">Ручное</p>
+        <h2>Тест-кейс и дефект-репорт</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card vs-col">
+            <h3 class="text-accent-1">Тест-кейс</h3>
+            <ul>
+              <li><b>цель</b>: что проверяем</li>
+              <li><b>предусловия</b>: состояние системы</li>
+              <li><b>шаги</b> → <span class="highlight-1">ожидаемый результат</span></li>
+            </ul>
+          </div>
+          <div class="card card-accent-3 vs-col">
+            <h3 class="text-accent-3">Дефект-репорт</h3>
+            <ul>
+              <li><b>шаги воспроизведения</b> + факт против ожидания</li>
+              <li><b>severity</b> — влияние на продукт</li>
+              <li><b>priority</b> — срочность исправления</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Severity и priority независимы: опечатка на главной — низкая серьёзность, высокая срочность</p>
+      </section>
+
+      <!-- 9 · ЗАЧЕМ АВТОМАТИЗИРОВАТЬ -->
+      <section>
+        <p class="label">Автоматизация</p>
+        <h2>Зачем и почему не всё</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card vs-col">
+            <h3 class="text-accent-2">Автоматизируем</h3>
+            <ul>
+              <li><b>регрессию</b>: проверять старое при каждом изменении</li>
+              <li>повторяемые прогоны: сборка, окружение</li>
+              <li>проверки с данными: сотни входов</li>
+            </ul>
+          </div>
+          <div class="card card-accent-3 vs-col">
+            <h3 class="text-accent-3">Оставляем людям</h3>
+            <ul>
+              <li>разовые проверки</li>
+              <li>исследовательские сессии</li>
+              <li>оценку удобства и внешнего вида</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Тест — это <span class="highlight-2">код</span>: ему нужна поддержка, как продукту.</p>
+      </section>
+
+      <!-- 10 · UNIT-ТЕСТ И FIRST -->
+      <section>
+        <p class="label">Автоматизация</p>
+        <h2>Unit-тест: изоляция и FIRST</h2>
+        <div class="bar"></div>
+
+        <ul style="margin-top: var(--space-sm);">
+          <li><b>Unit-тест</b> проверяет одну единицу (метод, класс) <span class="highlight-1">в изоляции</span> от остальной системы</li>
+        </ul>
+
+        <div class="grid-4" style="margin-top: var(--space-md);">
+          <div class="card card-accent-2">
+            <h4>F · Fast</h4>
+            <p>сотни тестов — <span class="text-primary">секунды</span></p>
+          </div>
+          <div class="card card-accent-2">
+            <h4>I · Independent</h4>
+            <p>порядок и соседние тесты <span class="text-primary">не влияют</span></p>
+          </div>
+          <div class="card card-accent-2">
+            <h4>R · Repeatable</h4>
+            <p>результат одинаков <span class="text-primary">везде и всегда</span></p>
+          </div>
+          <div class="card card-accent-2">
+            <h4>S · Self-validating</h4>
+            <p>вердикт <span class="text-primary">зелёный/красный</span> без человека</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 11 · JUNIT  (+ deep: параметризация) -->
+      <section>
+        <section>
+          <p class="label">Автоматизация · Java</p>
+          <h2>JUnit 5: структура теста</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <pre style="width: 100%;"><code class="language-java" data-trim>class CalculatorTest {
+
+    @Test
+    void twoPlusTwoIsFour() {
+        // arrange — подготовка
+        Calculator calc = new Calculator();
+
+        // act — действие
+        int result = calc.add(2, 2);
+
+        // assert — проверка
+        assertEquals(4, result);
+    }
+}</code></pre>
+
+          <div class="chip-row" style="margin-top: var(--space-sm);">
+            <span class="chip"><b>@Test</b> — метод-тест</span>
+            <span class="chip">паттерн <b>arrange — act — assert</b></span>
+            <span class="chip">запуск: <b>mvn test</b></span>
+          </div>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Параметризованные тесты</h2>
+          <div class="deep-rule"></div>
+          <pre style="width: 100%;"><code class="language-java" data-trim>@ParameterizedTest
+@CsvSource({
+    "  1,  1,  2",
+    "  2,  3,  5",
+    " -1,  1,  0",
+    "100,  0, 100"
+})
+void sumsCorrectly(int a, int b, int expected) {
+    assertEquals(expected, new Calculator().add(a, b));
+}</code></pre>
+          <p class="text-muted" style="margin-top: var(--space-sm); font-size: var(--size-body);">Один метод — много наборов данных; упавший набор виден в отчёте отдельно</p>
+        </section>
+      </section>
+
+      <!-- 12 · УТВЕРЖДЕНИЯ -->
+      <section>
+        <p class="label">Автоматизация · Java</p>
+        <h2>Утверждения</h2>
+        <div class="bar"></div>
+
+        <div class="hdr-grid" style="grid-template-columns: 380px 1fr; margin-top: var(--space-md);">
+          <div class="hcell flag"><b>assertEquals(4, x)</b></div>
+          <div class="hcell" style="text-align: left;">x равен 4 — иначе тест красный с разницей значений</div>
+          <div class="hcell flag"><b>assertTrue(cond)</b></div>
+          <div class="hcell" style="text-align: left;">условие истинно (и assertFalse наоборот)</div>
+          <div class="hcell flag"><b>assertNull(v) / assertNotNull(v)</b></div>
+          <div class="hcell" style="text-align: left;">значение null / не null</div>
+          <div class="hcell flag"><b>assertThrows(E.class, () -&gt; …)</b></div>
+          <div class="hcell" style="text-align: left;">блок кода бросит ожидаемое исключение</div>
+          <div class="hcell flag"><b>assertAll(…)</b></div>
+          <div class="hcell" style="text-align: left;">группа проверок: собрать ВСЕ результаты, а не падать на первой</div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Зелёный тест молчит; красный — сообщает, что именно не сошлось</p>
+      </section>
+
+      <!-- 13 · TEST DOUBLE  (+ deep: TDD) -->
+      <section>
+        <section>
+          <p class="label">Автоматизация · Java</p>
+          <h2>Заглушки: test double</h2>
+          <div class="bar bar-accent-3"></div>
+
+          <div class="grid-4" style="margin-top: var(--space-md);">
+            <div class="card">
+              <h4>Dummy</h4>
+              <p>просто <span class="text-primary">заполнить параметр</span>, не используется</p>
+            </div>
+            <div class="card card-accent-5">
+              <h4>Fake</h4>
+              <p><span class="text-primary">рабочая упрощённая</span> реализация: список вместо БД</p>
+            </div>
+            <div class="card card-accent-2">
+              <h4>Stub</h4>
+              <p>возвращает <span class="text-primary">подставные ответы</span> на вызовы</p>
+            </div>
+            <div class="card card-accent-3">
+              <h4>Mock</h4>
+              <p>проверяет <span class="text-primary">взаимодействия</span>: был ли вызов, с какими аргументами</p>
+            </div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Библиотека Mockito: <code>@Mock</code>, <code>when(…).thenReturn(…)</code>, <code>verify(…)</code></p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>TDD: тест раньше кода</h2>
+          <div class="deep-rule"></div>
+          <div class="flow-lane" style="margin-bottom: var(--space-md);">
+            <span class="flow-pill hot">RED: тест падает</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">GREEN: минимум кода</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">REFACTOR: чистим</span><span class="flow-arrow">↺</span>
+          </div>
+          <ul>
+            <li>Сначала тест, описывающий ожидаемое поведение — потом реализация</li>
+            <li>Эффект: интерфейсы проектируются <b>от использования</b>, тесты покрывают по построению</li>
+            <li>Дисциплина цикла важнее догмы: смысл — уверенность на каждом шаге</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 14 · ИНТЕГРАЦИОННЫЕ -->
+      <section>
+        <p class="label">Уровни</p>
+        <h2>Интеграционные тесты</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <ul style="margin-top: var(--space-sm);">
+          <li>Проверяют <b>взаимодействие модулей</b>: модуль + модуль, модуль + БД, модуль + файловая система</li>
+          <li>Изоляция уже не полная: вместо настоящей СУБД — <span class="highlight-5">in-memory база</span> (H2), вместо сети — тестовый контейнер</li>
+          <li>Ловят то, чего не видят unit-тесты: <span class="highlight-1">несовпадение договорённостей на стыках</span></li>
+          <li>Медленнее и капризнее unit — их в наборе меньше</li>
+        </ul>
+      </section>
+
+      <!-- 15 · ПОКРЫТИЕ И CI  (+ deep: flaky) -->
+      <section>
+        <section>
+          <p class="label">Организация</p>
+          <h2>Покрытие и CI</h2>
+          <div class="bar"></div>
+
+          <div class="grid-2" style="margin-top: var(--space-md);">
+            <div class="card">
+              <h4 class="text-accent-1">JaCoCo: покрытие</h4>
+              <p>доля строк и веток, исполненных под тестами. <span class="text-primary">100% не цель</span>; падение покрытия — сигнал</p>
+            </div>
+            <div class="card card-accent-2">
+              <h4 class="text-accent-2">CI: прогон на каждый push</h4>
+              <p>сборка → тесты → отчёт. Красная сборка <span class="text-primary">не попадает в общую ветку</span></p>
+            </div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Jenkins, GitHub Actions, GitLab CI — инструменты непрерывной интеграции</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Flaky-тесты</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Flaky</b> — тест, который «иногда падает»: без изменений кода</li>
+            <li>Причины: зависимость от времени, порядка тестов, сети, общей мутабельной среды</li>
+            <li>Опаснее падения: приучает команду к мысли <b>«красный — это нормально»</b>, и настоящий дефект проскочит</li>
+            <li>Лечение: детерминизм, изоляция состояния, фиксированные часы и данные</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 16 · РУЧНОЕ VS АВТОМАТ -->
+      <section>
+        <p class="label">Сравнение</p>
+        <h2>Ручное или автоматическое</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="hdr-grid" style="grid-template-columns: 1fr 300px 300px; margin-top: var(--space-md);">
+          <div class="hcell" style="text-align: left;"><b>Критерий</b></div>
+          <div class="hcell"><b>Ручное</b></div>
+          <div class="hcell"><b>Автоматическое</b></div>
+          <div class="hcell" style="text-align: left;">скорость прогона</div>
+          <div class="hcell">минуты — дни</div>
+          <div class="hcell">секунды</div>
+          <div class="hcell" style="text-align: left;">стоимость повтора</div>
+          <div class="hcell">высокая</div>
+          <div class="hcell">низкая</div>
+          <div class="hcell" style="text-align: left;">регрессия</div>
+          <div class="hcell">тяжело</div>
+          <div class="hcell">идеально</div>
+          <div class="hcell" style="text-align: left;">исследование, UX</div>
+          <div class="hcell">незаменимо</div>
+          <div class="hcell">слабо</div>
+          <div class="hcell" style="text-align: left;">начальные затраты</div>
+          <div class="hcell">низкие</div>
+          <div class="hcell">высокие</div>
+        </div>
+      </section>
+
+      <!-- 17 · ПРИМЕР -->
+      <section>
+        <p class="label">Пример · Java</p>
+        <h2>Тесты для echo-сервиса</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <pre style="width: 100%;"><code class="language-java" data-trim>@Test
+void echoReturnsSameLine() {
+    assertEquals("привет", new EchoService().process("привет"));
+}
+
+@Test
+void emptyLineStaysEmpty() {
+    assertEquals("", new EchoService().process(""));
+}</code></pre>
+
+        <pre style="width: 100%; margin-top: var(--space-sm); font-size: var(--size-small);"><code class="language-text" data-trim>$ mvn test
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS</code></pre>
+      </section>
+
+      <!-- 18 · КОНСПЕКТ -->
+      <section>
+        <p class="label">Конспект</p>
+        <h2>Ключевые определения</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md); column-gap: var(--space-lg); row-gap: var(--space-md);">
+          <div>
+            <h4 class="text-accent-1">Верификация</h4>
+            <p class="text-secondary">соответствие продукта спецификации</p>
+          </div>
+          <div>
+            <h4 class="text-accent-1">Валидация</h4>
+            <p class="text-secondary">соответствие потребностям пользователя</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Unit-тест</h4>
+            <p class="text-secondary">проверка одной единицы в изоляции</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Test double</h4>
+            <p class="text-secondary">заглушка вместо реальной зависимости: stub, mock, fake</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Регрессия</h4>
+            <p class="text-secondary">поломка ранее работавшего при новых изменениях</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Покрытие</h4>
+            <p class="text-secondary">доля кода, исполненного под тестами</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">Severity / Priority</h4>
+            <p class="text-secondary">влияние дефекта / срочность его исправления</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">Flaky-тест</h4>
+            <p class="text-secondary">нестабильный: падает без изменений кода</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 19 · ИТОГ -->
+      <section>
+        <p class="label">Итоги</p>
+        <h2>Три главных вывода</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Уровни — баланс</h4>
+            <p>пирамида: много быстрых unit, меньше интеграционных, горсть системных</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Роли — разные</h4>
+            <p>ручное — исследование и первая проверка; автоматическое — регрессия</p>
+          </div>
+          <div class="card card-accent-4">
+            <h4 class="text-accent-4">Тесты — это код</h4>
+            <p>FIRST, детерминизм и поддержка; иначе секта падающих тестов</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Тесты — документация, которая <span class="highlight-2">не врёт</span>.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="vendor/reveal/reveal.js"></script>
+  <script src="vendor/reveal/plugin/highlight/highlight.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      center: true,
+      transition: 'slide',
+      transitionSpeed: 'default',
+      backgroundTransition: 'slide',
+      width: 1920,
+      height: 1080,
+      margin: 0.08,
+      minScale: 0.2,
+      maxScale: 2.0,
+      controls: true,
+      progress: true,
+      slideNumber: 'h/v',
+      plugins: [RevealHighlight]
+    });
+  </script>
+</body>
+</html>

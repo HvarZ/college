@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTTP, SMTP и FTP — Сетевое программирование</title>
+
+  <!-- Reveal.js (вендорено, работает офлайн) -->
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="vendor/reveal/plugin/highlight/monokai.css">
+
+  <!-- Тема курса -->
+  <link rel="stylesheet" href="theme/course-dark.css">
+
+  <!-- Шрифты локально (кириллица + латиница, офлайн) -->
+  <link rel="stylesheet" href="vendor/fonts/fonts.css">
+</head>
+<body>
+
+  <div class="slide-footer">Сетевое программирование</div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- 1 · ТИТУЛ -->
+      <section class="centered">
+        <p class="label">Сетевое программирование</p>
+        <h1><span class="text-accent-1">HTTP</span>, <span class="text-accent-2">SMTP</span> и <span class="text-accent-3">FTP</span></h1>
+        <div class="bar"></div>
+        <p class="lead">Протоколы прикладного уровня: веб, электронная почта, передача файлов</p>
+      </section>
+
+      <!-- 2 · ПРИКЛАДНОЙ УРОВЕНЬ -->
+      <section>
+        <p class="label">Прикладной уровень</p>
+        <h2>Договорённости поверх TCP</h2>
+        <div class="bar"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">HTTP · SMTP · FTP</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">TCP — надёжный поток</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">IP — адресация</span>
+        </div>
+
+        <ul>
+          <li>Прикладной протокол = <b>синтаксис сообщений</b> + <b>последовательность обмена</b></li>
+          <li>Транспорт (TCP) гарантирует доставку байтов; прикладной уровень придаёт им <span class="highlight-1">смысл</span></li>
+        </ul>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Все три протокола родились до веба или в его начале — и дожили до сегодня</p>
+      </section>
+
+      <!-- 3 · ТРИ ЗАДАЧИ -->
+      <section>
+        <p class="label">Прикладной уровень</p>
+        <h2>Три задачи — три протокола</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Веб-страница</h4>
+            <p>короткий обмен «запрос — ответ»;<br><span class="text-primary">HTTP</span></p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Письмо</h4>
+            <p>доставить через цепочку посредников;<br><span class="text-primary">SMTP</span></p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Файл</h4>
+            <p>каталоги, докачка, большой объём;<br><span class="text-primary">FTP</span></p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Транспорт один — <span class="highlight-5">модели использования</span> разные.</p>
+      </section>
+
+      <!-- 4 · HTTP ПОВЕРХ TCP -->
+      <section>
+        <p class="label">HTTP</p>
+        <h2>HTTP: запрос — ответ</h2>
+        <div class="bar"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">TCP-соединение</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">запрос</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">ответ</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">закрыть / переиспользовать</span>
+        </div>
+
+        <ul>
+          <li><b>Текстовый</b> протокол: сообщения читаются человеком</li>
+          <li>Обмен инициирует <b>только клиент</b>; сервер отвечает</li>
+          <li><b>Без состояния</b> (stateless): каждый запрос самодостаточен</li>
+        </ul>
+      </section>
+
+      <!-- 5 · ЗАПРОС -->
+      <section>
+        <p class="label">HTTP</p>
+        <h2>Структура запроса</h2>
+        <div class="bar"></div>
+
+        <pre style="width: 100%;"><code class="language-http" data-trim>GET /orders/42 HTTP/1.1          ← строка запроса: метод · путь · версия
+Host: api.example.com            ← заголовки: имя-значение
+Accept: application/json
+User-Agent: curl/8.4.0
+                                 ← пустая строка — разделитель
+(тело: у GET его нет; у POST — данные)</code></pre>
+
+        <p class="text-muted" style="margin-top: var(--space-sm); font-size: var(--size-body);">Первая строка + заголовки + пустая строка + тело — так устроен каждый HTTP-запрос</p>
+      </section>
+
+      <!-- 6 · ОТВЕТ -->
+      <section>
+        <p class="label">HTTP</p>
+        <h2>Структура ответа</h2>
+        <div class="bar"></div>
+
+        <pre style="width: 100%;"><code class="language-http" data-trim>HTTP/1.1 200 OK                  ← статусная строка: версия · код · фраза
+Content-Type: application/json
+Content-Length: 27
+
+{"id": 42, "status": "paid"}</code></pre>
+
+        <div class="chip-row" style="margin-top: var(--space-md);">
+          <span class="chip"><b>1xx</b> информационные</span>
+          <span class="chip"><b>2xx</b> успех: 200, 201, 204</span>
+          <span class="chip"><b>3xx</b> перенаправление</span>
+          <span class="chip"><b>4xx</b> ошибка клиента: 404</span>
+          <span class="chip"><b>5xx</b> ошибка сервера: 500</span>
+        </div>
+      </section>
+
+      <!-- 7 · МЕТОДЫ  (+ deep: идемпотентность) -->
+      <section>
+        <section>
+          <p class="label">HTTP</p>
+          <h2>Методы HTTP</h2>
+          <div class="bar"></div>
+
+          <div class="hdr-grid" style="margin-top: var(--space-md);">
+            <div class="hcell"><b>Метод</b></div>
+            <div class="hcell"><b>Действие</b></div>
+            <div class="hcell"><b>Безопасный</b></div>
+            <div class="hcell"><b>Идемпотентный</b></div>
+            <div class="hcell flag"><b>GET</b></div>
+            <div class="hcell">прочитать</div>
+            <div class="hcell">да</div>
+            <div class="hcell">да</div>
+            <div class="hcell flag"><b>POST</b></div>
+            <div class="hcell">создать</div>
+            <div class="hcell">нет</div>
+            <div class="hcell">нет</div>
+            <div class="hcell flag"><b>PUT</b></div>
+            <div class="hcell">заменить</div>
+            <div class="hcell">нет</div>
+            <div class="hcell">да</div>
+            <div class="hcell flag"><b>DELETE</b></div>
+            <div class="hcell">удалить</div>
+            <div class="hcell">нет</div>
+            <div class="hcell">да</div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Безопасный — не меняет состояние сервера; идемпотентный — повтор не меняет результат</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Идемпотентность на практике</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Сеть сбоит → клиент повторяет запрос. GET и PUT повторять <b>безопасно</b>, POST — нет: двойной POST /orders = два заказа</li>
+            <li>Защита дублей POST: заголовок <code>Idempotency-Key</code> — сервер запоминает ключ операции и не выполняет её дважды</li>
+            <li>Правило: <b>4xx — исправляй запрос</b> (повтор бессмыслен), <b>5xx — повторяй позже</b> с задержкой</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 8 · ЗАГОЛОВКИ -->
+      <section>
+        <p class="label">HTTP</p>
+        <h2>Ключевые заголовки</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div class="grid-4" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4>Host</h4>
+            <p>какой сайт на сервере с <span class="text-primary">многими сайтами</span> (виртуальный хостинг)</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4>Content-Type</h4>
+            <p>формат тела: <span class="text-primary">application/json, text/html</span></p>
+          </div>
+          <div class="card card-accent-5">
+            <h4>Content-Length</h4>
+            <p><span class="text-primary">размер тела</span> в байтах — граница сообщения</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>Cache-Control</h4>
+            <p>можно ли <span class="text-primary">кэшировать</span> ответ и на какой срок</p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Заголовки — метаданные обмена: их десятки стандартных и сколько угодно своих (X-…)</p>
+      </section>
+
+      <!-- 9 · COOKIE И СЕССИИ -->
+      <section>
+        <p class="label">HTTP</p>
+        <h2>Cookie: состояние поверх stateless</h2>
+        <div class="bar"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">первый запрос</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">Set-Cookie: session=abc123</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">клиент хранит cookie</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">Cookie: session=abc123</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">сервер узнаёт клиента</span>
+        </div>
+
+        <ul>
+          <li>Протокол без состояния — сервер <b>не помнит</b> клиентов между запросами</li>
+          <li>Cookie — <b>метка клиента</b>: сервер выдаёт, браузер возвращает в каждом запросе</li>
+          <li><b>Сессия</b>: запись о пользователе на сервере + её идентификатор в cookie</li>
+        </ul>
+      </section>
+
+      <!-- 10 · HTTPS  (+ deep: TLS) -->
+      <section>
+        <section>
+          <p class="label">HTTP</p>
+          <h2>HTTPS: HTTP + TLS</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <div class="grid-3" style="margin-top: var(--space-md);">
+            <div class="card">
+              <h4 class="text-accent-2">Шифрование</h4>
+              <p>посредник видит <span class="text-primary">бессмыслицу</span>, а не пароли и карты</p>
+            </div>
+            <div class="card card-accent-2">
+              <h4 class="text-accent-2">Целостность</h4>
+              <p>подмена данных в пути <span class="text-primary">обнаруживается</span></p>
+            </div>
+            <div class="card card-accent-2">
+              <h4 class="text-accent-2">Подлинность</h4>
+              <p>сертификат — <span class="text-primary">паспорт сервера</span>, выданный центром доверия</p>
+            </div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Порт 443; внутри — обычный HTTP, но в зашифрованном виде</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Как TLS строит канал</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Рукопожатие</b>: ClientHello / ServerHello → сервер предъявляет <b>сертификат</b> → браузер проверяет цепочку доверия до корневого центра</li>
+            <li>Стороны согласуют <b>сеансовый ключ</b> (ECDHE): асимметричная криптография — только для обмена ключом</li>
+            <li>Дальше весь трафик шифруется <b>симметрично</b> — быстро</li>
+            <li>Асимметрия медленная: она защищает только «передачу ключа», симметрия — сами данные</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 11 · ЭВОЛЮЦИЯ  (+ deep: WebSocket) -->
+      <section>
+        <section>
+          <p class="label">HTTP</p>
+          <h2>Эволюция HTTP</h2>
+          <div class="bar"></div>
+
+          <div class="grid-4" style="margin-top: var(--space-md);">
+            <div>
+              <p class="stat text-accent-1" style="font-size: var(--size-h2);">1.0</p>
+              <h4>1996</h4>
+              <p class="text-secondary">соединение <span class="text-primary">на каждый запрос</span></p>
+            </div>
+            <div>
+              <p class="stat text-accent-1" style="font-size: var(--size-h2);">1.1</p>
+              <h4>1997</h4>
+              <p class="text-secondary">keep-alive: соединение <span class="text-primary">переиспользуется</span>; заголовок Host</p>
+            </div>
+            <div>
+              <p class="stat text-accent-4" style="font-size: var(--size-h2);">2</p>
+              <h4>2015</h4>
+              <p class="text-secondary">бинарный, <span class="text-primary">мультиплексация</span>: много запросов в одном соединении</p>
+            </div>
+            <div>
+              <p class="stat text-accent-3" style="font-size: var(--size-h2);">3</p>
+              <h4>2022</h4>
+              <p class="text-secondary"><span class="text-primary">QUIC поверх UDP</span> — без head-of-line блокировки</p>
+            </div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">QUIC: UDP, научившийся надёжности</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>WebSocket: когда HTTP мало</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>HTTP: говорит всегда клиент — сервер <b>не может «толкнуть»</b> данные сам</li>
+            <li>WebSocket: HTTP-запрос с заголовком <code>Upgrade: websocket</code> → соединение остаётся и становится <b>двусторонним</b></li>
+            <li>Обе стороны шлют кадры независимо; накладные расходы — единицы байт</li>
+            <li>Где: чаты, уведомления, котировки — всё «в реальном времени»</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 12 · ДЕМО HTTP -->
+      <section>
+        <p class="label">Демонстрация</p>
+        <h2>HTTP в терминале</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <pre style="width: 100%;"><code class="language-bash" data-trim># запрос и ответ целиком, с заголовками
+curl -sv https://example.com -o /dev/null
+
+# то же самое — вручную, по букве протокола
+telnet example.com 80
+GET / HTTP/1.1
+Host: example.com</code></pre>
+
+        <div class="chip-row" style="margin-top: var(--space-md);">
+          <span class="chip">браузер: DevTools → <b>Network</b> — все запросы страницы</span>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Протокол <span class="highlight-2">текстовый</span> — его можно вести руками.</p>
+      </section>
+
+      <!-- 13 · ПОЧТА: ТРИ ПРОТОКОЛА -->
+      <section>
+        <p class="label">Электронная почта</p>
+        <h2>Отправка ≠ получение</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-2">SMTP</h4>
+            <p><span class="text-primary">отправка</span> и передача между серверами<br>порты 25, 587</p>
+          </div>
+          <div class="card card-accent-5">
+            <h4 class="text-accent-5">POP3</h4>
+            <p><span class="text-primary">скачивание</span> писем на устройство<br>порты 110, 995</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">IMAP</h4>
+            <p><span class="text-primary">синхронизация</span> с папками на сервере<br>порты 143, 993</p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Письмо идёт: клиент → SMTP → сервер отправителя → SMTP → сервер получателя → POP3/IMAP → клиент</p>
+      </section>
+
+      <!-- 14 · SMTP-СЕССИЯ  (+ deep: вручную + MIME) -->
+      <section>
+        <section>
+          <p class="label">SMTP</p>
+          <h2>Сессия SMTP</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <pre style="width: 100%; font-size: var(--size-small);"><code class="language-text" data-trim>S: 220 mail.example.com ESMTP ready       ← сервер представился
+C: EHLO client.net                        ← клиент — в ответ
+S: 250 OK
+C: MAIL FROM:&lt;alice@client.net&gt;           ← конверт: отправитель
+S: 250 OK
+C: RCPT TO:&lt;bob@example.com&gt;              ← конверт: получатель
+S: 250 OK
+C: DATA                                   ← перехожу к тексту письма
+S: 354 Start mail input
+C: From: Alice … Subject: Отчёт …         ← заголовки и тело письма
+C: Текст письма.
+C: .                                      ← точка в пустой строке = конец
+S: 250 OK: queued
+C: QUIT</code></pre>
+
+          <p class="text-muted" style="margin-top: var(--space-sm); font-size: var(--size-body);">Диалог команд и кодов — как у HTTP, но инициирует отправитель</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>MIME и судьба письма</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>MIME</b>: заголовки <code>Content-Type</code> и multipart позволяют вкладения и не-ASCII тексты (кириллицу) — изначально SMTP был только 7-битным ASCII</li>
+            <li><b>Релеи</b>: письмо проходит несколько SMTP-серверов; каждый добавляет строку <code>Received:</code> — маршрут письма видно в заголовках</li>
+            <li><b>SPF / DKIM / DMARC</b>: проверки «действительно ли отправитель тот, за кого себя выдаёт» — без них письмо улетает в спам</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 15 · POP3 VS IMAP -->
+      <section>
+        <p class="label">Почта</p>
+        <h2>POP3 и IMAP</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card vs-col">
+            <h3 class="text-accent-5">POP3 — забрать</h3>
+            <ul>
+              <li>скачивает письма на устройство, <span class="text-primary">удаляет с сервера</span></li>
+              <li>одно устройство, работа офлайн</li>
+              <li>папки — только локально</li>
+            </ul>
+          </div>
+          <div class="card card-accent-3 vs-col">
+            <h3 class="text-accent-3">IMAP — синхронизировать</h3>
+            <ul>
+              <li>письма и папки <span class="text-primary">живут на сервере</span></li>
+              <li>много устройств согласованы</li>
+              <li>состояние прочитано/непрочитано — общее</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Сегодня пользователь чаще видит не POP3/IMAP напрямую, а веб-интерфейс — но это HTTP-надстройка над той же почтовой системой</p>
+      </section>
+
+      <!-- 16 · FTP: ДВА КАНАЛА  (+ deep: режимы) -->
+      <section>
+        <section>
+          <p class="label">FTP</p>
+          <h2>FTP: два канала</h2>
+          <div class="bar bar-accent-3"></div>
+
+          <div class="grid-1-2" style="margin-top: var(--space-md); align-items: center;">
+            <div class="centered">
+              <p class="stat text-accent-3" style="font-size: var(--size-stat);">2</p>
+              <p class="stat-label">канала у одной сессии</p>
+            </div>
+            <ul>
+              <li><b>Канал управления</b> (порт 21): команды — USER, PASS, LIST, GET, PUT — и коды ответов</li>
+              <li><b>Канал данных</b>: отдельное соединение — само содержимое файла или листинг каталога</li>
+              <li>Управление не блокируется перекачкой: можно послать ABOR — прервать передачу</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Активный и пассивный режим</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Активный</b>: сервер сам подключается к клиенту для канала данных — у клиента должен быть видимый адрес</li>
+            <li>За NAT и файрволом активный режим <b>ломается</b>: NAT прячет адреса клиентов</li>
+            <li><b>Пассивный</b>: клиент сам открывает второе соединение к серверу — проходит через NAT, поэтому стал стандартом</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 17 · FTPS И SFTP -->
+      <section>
+        <p class="label">FTP</p>
+        <h2>Наследники FTP</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">FTPS</h4>
+            <p>FTP + TLS: тот же протокол, <span class="text-primary">шифрованный</span> (порт 990)</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">SFTP</h4>
+            <p>передача файлов <span class="text-primary">поверх SSH</span> (порт 22) — другой протокол при схожем имени</p>
+          </div>
+        </div>
+
+        <ul style="margin-top: var(--space-md);">
+          <li>Чистый FTP передаёт пароли и данные <span class="highlight-3">открытым текстом</span></li>
+          <li>Два канала + проблемы с NAT — архитектурное наследие 1971 года (RFC 114 → 959)</li>
+        </ul>
+      </section>
+
+      <!-- 18 · СРАВНЕНИЕ -->
+      <section>
+        <p class="label">Сравнение</p>
+        <h2>Три протокола рядом</h2>
+        <div class="bar"></div>
+
+        <div class="hdr-grid" style="margin-top: var(--space-md); font-size: var(--size-small);">
+          <div class="hcell"><b>Протокол</b></div>
+          <div class="hcell"><b>Порты</b></div>
+          <div class="hcell"><b>Модель</b></div>
+          <div class="hcell"><b>Шифрование</b></div>
+          <div class="hcell"><b>Сегодня</b></div>
+          <div class="hcell flag"><b>HTTP</b></div>
+          <div class="hcell">80 / 443</div>
+          <div class="hcell">запрос — ответ</div>
+          <div class="hcell">TLS</div>
+          <div class="hcell">основа веба и API</div>
+          <div class="hcell flag"><b>SMTP</b></div>
+          <div class="hcell">25 / 587</div>
+          <div class="hcell">диалог-сессия</div>
+          <div class="hcell">STARTTLS</div>
+          <div class="hcell">отправка почты</div>
+          <div class="hcell flag"><b>FTP</b></div>
+          <div class="hcell">21 + данные</div>
+          <div class="hcell">два канала</div>
+          <div class="hcell">нет (FTPS/SFTP)</div>
+          <div class="hcell">legacy-обмены</div>
+        </div>
+      </section>
+
+      <!-- 19 · КОНСПЕКТ -->
+      <section>
+        <p class="label">Конспект</p>
+        <h2>Ключевые определения</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md); column-gap: var(--space-lg); row-gap: var(--space-md);">
+          <div>
+            <h4 class="text-accent-1">Прикладной протокол</h4>
+            <p class="text-secondary">синтаксис сообщений и порядок обмена поверх транспорта</p>
+          </div>
+          <div>
+            <h4 class="text-accent-1">Идемпотентность</h4>
+            <p class="text-secondary">повтор запроса не меняет результат</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Cookie</h4>
+            <p class="text-secondary">метка клиента: сервер выдаёт, браузер возвращает в каждом запросе</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Сертификат</h4>
+            <p class="text-secondary">паспорт сервера в TLS, подтверждённый центром доверия</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">MIME</h4>
+            <p class="text-secondary">расширение почты: вложения и не-ASCII тексты</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Пассивный режим</h4>
+            <p class="text-secondary">FTP: клиент сам открывает канал данных — работает за NAT</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">Релей</h4>
+            <p class="text-secondary">промежуточный SMTP-сервер в маршруте письма</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">Keep-alive</h4>
+            <p class="text-secondary">переиспользование TCP-соединения между запросами</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 20 · ИТОГ -->
+      <section>
+        <p class="label">Итоги</p>
+        <h2>Три главных вывода</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">HTTP — запрос-ответ</h4>
+            <p>текстовый, без состояния; состояние добавляют cookie и сессии</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Почта — конвейер</h4>
+            <p>SMTP передаёт по цепочке, POP3/IMAP забирают; MIME несёт вложения</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">FTP — два канала</h4>
+            <p>управление отдельно от данных; переживается SFTP/FTPS</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Один транспорт — <span class="highlight-1">разные договорённости</span>.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="vendor/reveal/reveal.js"></script>
+  <script src="vendor/reveal/plugin/highlight/highlight.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      center: true,
+      transition: 'slide',
+      transitionSpeed: 'default',
+      backgroundTransition: 'slide',
+      width: 1920,
+      height: 1080,
+      margin: 0.08,
+      minScale: 0.2,
+      maxScale: 2.0,
+      controls: true,
+      progress: true,
+      slideNumber: 'h/v',
+      plugins: [RevealHighlight]
+    });
+  </script>
+</body>
+</html>
