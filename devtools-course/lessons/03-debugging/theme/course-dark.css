@@ -1,0 +1,373 @@
+/* ============================================================
+   Курс «Компьютерные сети» — тёмная тема (tokyo-night)
+   Основано на revealjs-presenter skill, тема bold (адаптация)
+   Канва: 1920×1080. Все шрифты с поддержкой кириллицы.
+   ============================================================ */
+
+:root {
+  /* === ЦВЕТА (tokyo-night) === */
+  --bg-primary: #1a1b26;      /* основной фон слайда */
+  --bg-secondary: #24283b;    /* карточки, код, панели */
+  --bg-deep: #16161e;         /* вертикальные слайды «доп. факт» */
+  --bg-border: #3b4261;       /* границы карточек и таблиц */
+
+  --text-primary: #c0caf5;
+  --text-secondary: #a9b1d6;
+  --text-muted: #565f89;
+  --text-on-dark: #ffffff;
+
+  --accent-1: #7aa2f7;        /* синий — основной */
+  --accent-2: #9ece6a;        /* зелёный — успех/данные */
+  --accent-3: #ff9e64;        /* оранжевый — внимание */
+  --accent-4: #bb9af7;        /* фиолетовый — доп. факты */
+  --accent-5: #7dcfff;        /* голубой — типы/классы */
+
+  /* === ТИПОГРАФИКА === */
+  --font-display: 'Golos Text', 'Inter', -apple-system, sans-serif;
+  --font-body: 'Golos Text', 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  /* === РАЗМЕРЫ (канва 1920×1080) === */
+  --size-stat-hero: clamp(6rem, 15vw, 13rem);
+  --size-stat: clamp(4rem, 9vw, 7rem);
+  --size-impact: clamp(2.6rem, 5vw, 4.2rem);
+  --size-impact-hero: clamp(3.4rem, 8vw, 6rem);
+  --size-h1: clamp(4.5rem, 7.5vw, 7rem);
+  --size-h2: clamp(3rem, 5vw, 4.4rem);
+  --size-h3: clamp(1.8rem, 2.8vw, 2.4rem);
+  --size-h4: clamp(1.5rem, 2.2vw, 1.9rem);
+  --size-body: clamp(1.4rem, 1.8vw, 1.8rem);
+  --size-body-lg: clamp(1.7rem, 2.2vw, 2.1rem);
+  --size-body-xl: clamp(2.2rem, 3vw, 3rem);
+  --size-small: clamp(1.15rem, 1.3vw, 1.35rem);
+  --size-label: clamp(1.2rem, 1.5vw, 1.5rem);
+  --size-code: clamp(1.25rem, 1.45vw, 1.5rem);
+
+  /* === ОТСТУПЫ === */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 2rem;
+  --space-lg: 3rem;
+  --space-xl: 4rem;
+
+  /* === КОМПОНЕНТЫ === */
+  --bar-width: 120px;
+  --bar-height: 8px;
+  --card-radius: 14px;
+  --card-padding: 1.8rem;
+
+  --content-max-width: 1500px;
+  --slide-padding: 60px;
+}
+
+/* === БАЗА === */
+html, body, .reveal-viewport { background: var(--bg-primary); }
+
+.reveal {
+  font-family: var(--font-body);
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+.reveal .slides section {
+  text-align: left;
+  padding: var(--slide-padding);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.reveal .slides section.centered { text-align: center; }
+
+.reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 0.5em 0;
+  text-shadow: none;
+}
+.reveal h1 { font-size: var(--size-h1); }
+.reveal h2 { font-size: var(--size-h2); }
+.reveal h3 { font-size: var(--size-h3); }
+.reveal h4 { font-size: var(--size-h4); }
+
+.reveal p { margin: 0 0 1em 0; line-height: 1.5; font-size: var(--size-body); }
+.reveal p.lead { font-size: var(--size-body-xl); color: var(--text-secondary); }
+
+.reveal ul, .reveal ol {
+  margin: 0;
+  padding: 0;
+  list-style-position: outside;
+  margin-left: 1.5em;
+}
+.reveal li { margin-bottom: 0.5em; line-height: 1.45; font-size: var(--size-body); }
+.reveal li::marker { color: var(--accent-1); }
+
+.reveal strong { color: var(--text-primary); font-weight: 700; }
+.reveal em { color: var(--text-secondary); }
+.reveal a { color: var(--accent-1); text-decoration: none; }
+
+/* === УТИЛИТЫ ТЕКСТА (с .reveal для специфичности) === */
+.reveal .label {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent-1);
+  margin-bottom: var(--space-sm);
+}
+.reveal .text-muted { color: var(--text-muted); }
+.reveal .text-secondary { color: var(--text-secondary); }
+.reveal .text-accent-1 { color: var(--accent-1); }
+.reveal .text-accent-2 { color: var(--accent-2); }
+.reveal .text-accent-3 { color: var(--accent-3); }
+.reveal .text-accent-4 { color: var(--accent-4); }
+.reveal .text-accent-5 { color: var(--accent-5); }
+
+.reveal .highlight-1 { color: var(--accent-1); font-weight: 700; }
+.reveal .highlight-2 { color: var(--accent-2); font-weight: 700; }
+.reveal .highlight-3 { color: var(--accent-3); font-weight: 700; }
+.reveal .highlight-4 { color: var(--accent-4); font-weight: 700; }
+.reveal .highlight-5 { color: var(--accent-5); font-weight: 700; }
+
+/* === BAR (акцентная плашка) === */
+.bar {
+  width: var(--bar-width);
+  height: var(--bar-height);
+  background: var(--accent-1);
+  border-radius: 4px;
+  margin-bottom: var(--space-md);
+}
+.bar-accent-2 { background: var(--accent-2); }
+.bar-accent-3 { background: var(--accent-3); }
+.bar-accent-4 { background: var(--accent-4); }
+.centered .bar { margin-left: auto; margin-right: auto; }
+
+/* === КАРТОЧКИ === */
+.reveal .card {
+  background: var(--bg-secondary);
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
+  border-left: 6px solid var(--accent-1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  text-align: left;
+}
+.reveal .card h3, .reveal .card h4 { margin-bottom: var(--space-xs); }
+.reveal .card p { color: var(--text-secondary); margin: 0; font-size: var(--size-body); }
+.reveal .card-accent-2 { border-left-color: var(--accent-2); }
+.reveal .card-accent-3 { border-left-color: var(--accent-3); }
+.reveal .card-accent-4 { border-left-color: var(--accent-4); }
+.reveal .card-accent-5 { border-left-color: var(--accent-5); }
+
+/* === СЕТКИ === */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-lg); }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-md); }
+.grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: var(--space-lg); }
+
+/* === КОД === */
+.reveal pre {
+  font-family: var(--font-mono);
+  font-size: var(--size-code);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  padding: var(--space-md) var(--space-md);
+  border: 1px solid var(--bg-border);
+  border-radius: var(--card-radius);
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  line-height: 1.55;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+.reveal pre code {
+  font-family: inherit;
+  line-height: 1.55;
+  background: transparent;
+  padding: 0;
+  max-height: none;
+}
+.reveal code, .reveal kbd {
+  font-family: var(--font-mono);
+  color: var(--accent-5);
+  background: rgba(122, 162, 247, 0.12);
+  border-radius: 6px;
+  padding: 0.1em 0.4em;
+  font-size: 0.92em;
+}
+
+/* Подсветка синтаксиса — палитра tokyo-night (поверх monokai) */
+.reveal pre code .hljs-keyword,
+.reveal pre code .hljs-selector-tag,
+.reveal pre code .hljs-literal,
+.reveal pre code .hljs-doctag { color: var(--accent-4); }
+.reveal pre code .hljs-string,
+.reveal pre code .hljs-attr,
+.reveal pre code .hljs-addition { color: var(--accent-2); }
+.reveal pre code .hljs-number { color: var(--accent-3); }
+.reveal pre code .hljs-comment,
+.reveal pre code .hljs-quote { color: var(--text-muted); font-style: italic; }
+.reveal pre code .hljs-title,
+.reveal pre code .hljs-title.class_,
+.reveal pre code .hljs-title.function_ { color: var(--accent-1); }
+.reveal pre code .hljs-type,
+.reveal pre code .hljs-built_in,
+.reveal pre code .hljs-class { color: var(--accent-5); }
+.reveal pre code .hljs-params { color: var(--text-secondary); }
+.reveal pre code .hljs-meta { color: var(--text-muted); }
+
+/* === ПОРЯДОК ШАГОВ (flow-пилюли) === */
+.flow-lane { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+.flow-lane .lane-title {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  min-width: 200px;
+}
+.flow-pill {
+  font-family: var(--font-mono);
+  font-size: var(--size-code);
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-border);
+  border-radius: 999px;
+  padding: 0.55em 1.1em;
+  white-space: nowrap;
+}
+.flow-pill.hot { border-color: var(--accent-1); color: var(--accent-1); }
+.flow-arrow { color: var(--text-muted); font-size: 1.6rem; }
+
+/* === ЭНДПОИНТЫ (сокет = IP + порт) === */
+.ep-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+}
+.ep-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-border);
+  border-radius: var(--card-radius);
+  padding: var(--space-sm) var(--space-md);
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+.ep-card .ep-role {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-bottom: 0.3em;
+}
+.ep-card .ep-addr {
+  font-family: var(--font-mono);
+  font-size: clamp(1.6rem, 2.4vw, 2.4rem);
+  font-weight: 700;
+}
+.ep-card .ep-addr .port { color: var(--accent-3); }
+.net-link {
+  flex: 1;
+  max-width: 320px;
+  border-top: 3px dashed var(--text-muted);
+  position: relative;
+  text-align: center;
+}
+.net-link .net-label {
+  position: relative;
+  top: -1.1em;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  background: var(--bg-primary);
+  padding: 0 0.8em;
+}
+
+/* === ЧИПЫ (well-known порты) === */
+.chip-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+.chip {
+  font-family: var(--font-mono);
+  font-size: var(--size-small);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-border);
+  border-radius: 999px;
+  padding: 0.4em 1em;
+}
+.chip b { color: var(--accent-1); }
+
+/* === ТАБЛИЦА TCP-ЗАГОЛОВКА === */
+.hdr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 2px solid var(--bg-border);
+  border-radius: 10px;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--size-small);
+}
+.hdr-grid .hcell {
+  padding: 0.7em 1em;
+  border: 1px solid var(--bg-border);
+  color: var(--text-secondary);
+  text-align: center;
+}
+.hdr-grid .hcell b { color: var(--text-primary); display: block; font-size: 1.1em; }
+.hdr-grid .hcell .bits { color: var(--text-muted); font-size: 0.85em; }
+.hdr-grid .hcell.span-2 { grid-column: span 2; }
+.hdr-grid .hcell.hot { background: rgba(122, 162, 247, 0.12); }
+.hdr-grid .hcell.hot b { color: var(--accent-1); }
+.hdr-grid .hcell.flag b { color: var(--accent-4); }
+
+/* === СРАВНЕНИЕ (A vs B) === */
+.vs-col { display: flex; flex-direction: column; }
+.vs-col ul { margin-left: 1.2em; }
+.vs-col li { font-size: var(--size-body); }
+
+/* === ВЕРТИКАЛЬНЫЕ СЛАЙДЫ «ДОП. ФАКТ» === */
+.reveal .slides section.deep { padding-top: 50px; }
+.reveal .slides section.deep .label { color: var(--accent-4); }
+.deep-rule {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-4), transparent 60%);
+  margin-bottom: var(--space-md);
+}
+
+/* === ФУТЕР === */
+.slide-footer {
+  position: fixed;
+  bottom: 26px;
+  right: 34px;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  z-index: 1000;
+}
+
+/* === ЗАМЕТКИ СПИКЕРА (скрыты: дека работает без сервера, file://) === */
+.reveal aside.notes { display: none; }
+
+/* === ХРОМ REVEAL === */
+.reveal .controls { color: var(--accent-1); opacity: 0.85; }
+.reveal .progress { color: var(--accent-1); background: rgba(192, 202, 245, 0.08); height: 6px; }
+.reveal .slide-number {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  background: rgba(22, 22, 30, 0.7);
+  padding: 0.3em 0.7em;
+  border-radius: 8px;
+}
+.reveal .overview .slides section { border: 1px solid var(--bg-border); }

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Отладка программных продуктов — Инструментальные средства разработки ПО</title>
+
+  <!-- Reveal.js (вендорено, работает офлайн) -->
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="vendor/reveal/plugin/highlight/monokai.css">
+
+  <!-- Тема курса -->
+  <link rel="stylesheet" href="theme/course-dark.css">
+
+  <!-- Шрифты локально (кириллица + латиница, офлайн) -->
+  <link rel="stylesheet" href="vendor/fonts/fonts.css">
+</head>
+<body>
+
+  <div class="slide-footer">Инструментальные средства разработки ПО</div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- 1 · ТИТУЛ -->
+      <section class="centered">
+        <p class="label">Инструментальные средства разработки ПО</p>
+        <h1>Отладка <span class="text-accent-3">программных</span><br><span class="text-accent-3">продуктов</span></h1>
+        <div class="bar"></div>
+        <p class="lead">От симптома к причине: дебаггер, логирование, диагностика</p>
+      </section>
+
+      <!-- 2 · ТЕСТИРОВАНИЕ VS ОТЛАДКА -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>Тестирование и отладка</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card vs-col">
+            <h3 class="text-accent-2">Тестирование</h3>
+            <ul>
+              <li>находит <b>симптом</b>: отказ, неверный результат</li>
+              <li>отвечает на вопрос <span class="text-primary">«что не работает?»</span></li>
+              <li>инструменты: тест-кейсы, JUnit, чек-листы</li>
+            </ul>
+          </div>
+          <div class="card card-accent-3 vs-col">
+            <h3 class="text-accent-3">Отладка</h3>
+            <ul>
+              <li>ищет <b>причину</b>: дефект в коде или данных</li>
+              <li>отвечает на вопрос <span class="text-primary">«почему не работает?»</span></li>
+              <li>инструменты: дебаггер, логи, профилировщик</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Тестирование нашло отказ — отладка ведёт от отказа к строке, которая его вызывает</p>
+      </section>
+
+      <!-- 3 · МЕТОД -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>Отладка — это научный метод</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill hot">гипотеза</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">эксперимент</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">вывод</span><span class="flow-arrow">↺</span>
+        </div>
+
+        <ul>
+          <li><b>Гипотеза</b>: «подозреваю, что массив пуст, когда приходит пустая строка»</li>
+          <li><b>Эксперимент</b>: остановить программу и посмотреть — проверка, а не гадание</li>
+          <li>Гипотеза подтвердилась — локализовали; нет — <span class="highlight-5">новая гипотеза</span></li>
+        </ul>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Меняй <span class="highlight-3">одну вещь</span> за раз — иначе не узнаешь, что подействовало.</p>
+      </section>
+
+      <!-- 4 · РЕЖИМ ОТЛАДКИ -->
+      <section>
+        <p class="label">Дебаггер · IDEA</p>
+        <h2>Точка остановки: заморозка времени</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Run</h4>
+            <p>программа выполняется <span class="text-primary">от начала до конца</span>; наблюдаем только результат</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Debug</h4>
+            <p>на <span class="text-primary">breakpoint</span> поток замирает — состояние можно <span class="text-primary">рассмотреть</span></p>
+          </div>
+        </div>
+
+        <ul style="margin-top: var(--space-md);">
+          <li><b>Breakpoint</b> — метка на строке: «остановись здесь» (клик по полю слева)</li>
+          <li>В остановке видны: <span class="highlight-1">значения переменных</span>, место выполнения, стек вызовов</li>
+          <li>Дебаггер не меняет код: он делает состояние программы <span class="highlight-3">наблюдаемым</span></li>
+        </ul>
+      </section>
+
+      <!-- 5 · ТРИ ШАГА  (+ deep: условные breakpoints) -->
+      <section>
+        <section>
+          <p class="label">Дебаггер · IDEA</p>
+          <h2>Три шага выполнения</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <div class="hdr-grid" style="grid-template-columns: 300px 1fr; margin-top: var(--space-md);">
+            <div class="hcell flag"><b>Step Over</b></div>
+            <div class="hcell" style="text-align: left;">выполнить строку целиком и перейти к следующей — <b>не входя</b> в вызываемые методы</div>
+            <div class="hcell flag"><b>Step Into</b></div>
+            <div class="hcell" style="text-align: left;">шагнуть <b>внутрь</b> вызова — вглубь по стеку</div>
+            <div class="hcell flag"><b>Step Out</b></div>
+            <div class="hcell" style="text-align: left;">выполнить текущий метод <b>до конца</b> и вернуться к вызывающему</div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Тактика: Over по своему коду; Into — только когда подозреваемый именно этот вызов</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Условные точки остановки</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Breakpoint в цикле на десять тысяч итераций? <b>Условие</b>: останавливаться только при <code>i == 9999</code> или <code>name.equals("Иванов")</code></li>
+            <li><b>Evaluate Expression</b>: в остановке посчитать любое выражение в текущем контексте — <code>items.size()</code>, <code>total * 0.9</code> — без изменения кода</li>
+            <li>Также полезны: <b>log breakpoint</b> — не останавливать, а печатать значение; hit count — стоп на N-м срабатывании</li>
+          </ul>
+          <div class="card card-accent-4" style="margin-top: var(--space-md);">
+            <h4>Смысл</h4>
+            <p>Дебаггер настраивается под задачу — большинство «неудобных» остановок решаются условием</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- 6 · WATCHES -->
+      <section>
+        <p class="label">Дебаггер · IDEA</p>
+        <h2>Наблюдение и правка на лету</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Watches</h4>
+            <p>закрепить выражения за экраном: <span class="text-primary">items.size()</span>, <span class="text-primary">total &gt; limit</span> — меняются с каждым шагом</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Set Value</h4>
+            <p>изменить переменную прямо в остановке и <span class="text-primary">продолжить выполнение</span> — «что если discount = 0.9?» без перезапуска</p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Эксперименты «что если» без правки кода и пересборки — в этом сила дебаггера</p>
+      </section>
+
+      <!-- 7 · СТЕК ВЫЗОВОВ  (+ deep: drop frame, attach) -->
+      <section>
+        <section>
+          <p class="label">Дебаггер · IDEA</p>
+          <h2>Стек вызовов: как я сюда попал</h2>
+          <div class="bar bar-accent-5"></div>
+
+          <pre style="width: 100%; font-size: var(--size-small);"><code class="language-text" data-trim>process():  EchoService.java:14     ← сейчас здесь
+handle():   ClientHandler.java:31
+run():      ClientHandler.java:22     ← каждый кадр — контекст вызова
+...</code></pre>
+
+          <ul style="margin-top: var(--space-sm);">
+            <li><b>Frames</b> — путь вызовов сверху вниз: от текущей строки до <code>main</code></li>
+            <li>Клик по кадру — переключение в тот вызов: видны <span class="highlight-1">его переменные</span></li>
+            <li>Стек отвечает на половину вопросов отладки: <span class="highlight-5">кто вызвал и с чем</span></li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Drop Frame и Attach to Process</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Drop Frame</b>: отмотать верхний вызов — вернуться в точку перед ним и <b>пройти заново</b>, с уже известными данными. «Переиграть» ошибочный шаг</li>
+            <li><b>Attach to Process</b>: подключить дебаггер к <b>уже работающему</b> приложению — без перезапуска. Работает и для удалённого сервера (по порту агента)</li>
+            <li>Attach — стандарт для отладки долгоживущих процессов, которые нельзя останавливать</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 8 · ПОЧЕМУ НЕ PRINTLN -->
+      <section>
+        <p class="label">Логирование</p>
+        <h2>Почему System.out — плохо</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-4" style="margin-top: var(--space-md);">
+          <div class="card card-accent-3">
+            <h4>Не выключить</h4>
+            <p>печать остаётся в проде — <span class="text-primary">навсегда</span></p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>Нет уровней</h4>
+            <p>трассировка и авария — <span class="text-primary">одним цветом</span></p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>Тормозит</h4>
+            <p>вывод в консоль — <span class="text-primary">медленный I/O</span>, в цикле — катастрофа</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>Нет контекста</h4>
+            <p>ни времени, ни потока, ни источника — <span class="text-primary">голая строка</span></p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">println — для первого взгляда; <span class="highlight-2">логгер</span> — для системы.</p>
+      </section>
+
+      <!-- 9 · SLF4J + LOGBACK  (+ deep: MDC) -->
+      <section>
+        <section>
+          <p class="label">Логирование · Java</p>
+          <h2>Логгер: уровни и формат</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <pre style="width: 100%;"><code class="language-java" data-trim>private static final Logger log =
+        LoggerFactory.getLogger(EchoService.class);
+
+log.trace("вошли в process()");
+log.debug("line = {}", line);            // подстановка, не конкатенация
+log.info("клиент подключился: {}", addr);
+log.warn("пустая строка - пропускаю");
+log.error("обработка упала", exception); // + stack trace</code></pre>
+
+          <div class="chip-row" style="margin-top: var(--space-sm);">
+            <span class="chip"><b>TRACE→DEBUG→INFO→WARN→ERROR</b>: порог настраивается</span>
+            <span class="chip">SLF4J — фасад, <b>Logback</b> — реализация</span>
+          </div>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Корреляция записей: MDC и requestId</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Проблема: запросы от разных клиентов <b>перемешиваются</b> в общем логе</li>
+            <li><b>MDC</b> (Mapped Diagnostic Context): карта «метка → значение», живёт в потоке; в начале запроса кладём <code>requestId</code> — и каждая запись лога его содержит</li>
+            <li>Итог: <code>grep requestId</code> вытянет <b>всю историю одного запроса</b> сквозь все классы</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 10 · СТРАТЕГИЯ ЛОГИРОВАНИЯ -->
+      <section>
+        <p class="label">Логирование</p>
+        <h2>Что и сколько логировать</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card vs-col">
+            <h3 class="text-accent-2">Стоит</h3>
+            <ul>
+              <li>входы и выходы ключевых операций</li>
+              <li><b>решения</b>: «лимит превышен — отказ»</li>
+              <li>ошибки <span class="text-primary">с контекстом</span> и stack trace</li>
+              <li>медленные места: «обработка заняла N мс»</li>
+            </ul>
+          </div>
+          <div class="card card-accent-3 vs-col">
+            <h3 class="text-accent-3">Не стоит</h3>
+            <ul>
+              <li>пароли, токены, персональные данные</li>
+              <li>каждую итерацию цикла</li>
+              <li>одно и то же на каждом уровне стека</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 11 · ОТЛАДОЧНЫЕ КЛАССЫ  (+ deep: assert) -->
+      <section>
+        <section>
+          <p class="label">Отладочные классы</p>
+          <h2>Диагностика в собственном коде</h2>
+          <div class="bar bar-accent-5"></div>
+
+          <pre style="width: 100%;"><code class="language-java" data-trim>public final class Debug {                      // утилита отладки
+    public static void timed(String what, Runnable code) {
+        long t0 = System.nanoTime();
+        code.run();
+        long ms = (System.nanoTime() - t0) / 1_000_000;
+        log.debug("{} заняло {} мс", what, ms);
+    }
+}
+
+Debug.timed("обработка запроса", () -> service.process(line));</code></pre>
+
+          <ul style="margin-top: var(--space-sm);">
+            <li><b>Отладочный класс</b> — вспомогательный код диагностики: замеры времени, счётчики вызовов, трассировка входа-выхода</li>
+            <li>Живёт в проекте постоянно; <code>java.util.logging</code> — системный вариант из JDK</li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>assert в Java</h2>
+          <div class="deep-rule"></div>
+          <pre style="width: 100%;"><code class="language-java" data-trim>int total = calcTotal(items);
+assert total >= 0 : "total отрицателен: " + total;</code></pre>
+          <ul style="margin-top: var(--space-sm);">
+            <li><code>assert условие : сообщение</code> — проверка «внутренней уверенности»</li>
+            <li>Выключены по умолчанию: включаются флагом <code>-ea</code> (enable assertions)</li>
+            <li>Не для валидации пользовательских данных: в проде проверка может быть просто выключена — assert — инструмент разработчика, а не защиты</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 12 · STACK TRACE  (+ deep: цепочки) -->
+      <section>
+        <section>
+          <p class="label">Диагностика</p>
+          <h2>Stack trace: читаем правильно</h2>
+          <div class="bar bar-accent-3"></div>
+
+          <pre style="width: 100%; font-size: var(--size-small);"><code class="language-text" data-trim>java.lang.StringIndexOutOfBoundsException:
+  begin 0, end -1, length 0          ← что случилось
+  at java.lang.String.substring(String.java:...)
+  at EchoService.process(EchoService.java:14)   ← ПЕРВАЯ «СВОЯ» строка
+  at ClientHandler.handle(ClientHandler.java:31)
+  ...</code></pre>
+
+          <ul style="margin-top: var(--space-sm);">
+            <li>Первая строка — <b>исключение и сообщение</b>; дальше — путь от места броска вверх</li>
+            <li>Идти к <span class="highlight-3">первой строке своего кода</span> — библиотечные кадры редко виноваты</li>
+            <li>Строка вида <code>Caused by:</code> внизу — <b>первопричина</b>, читать её</li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Цепочки исключений</h2>
+          <div class="deep-rule"></div>
+          <pre style="width: 100%;"><code class="language-java" data-trim>try {
+    order.process(items);
+} catch (IOException e) {
+    throw new ServiceException("обработка заказа упала", e); // ← причина внутрь
+}</code></pre>
+          <p class="text-muted" style="margin-top: var(--space-sm); font-size: var(--size-body);">Оборачивая исключение, всегда передавайте исходное — тогда в логе появится <code>Caused by</code> с настоящей причиной. Потерянная причина — потерянные часы отладки</p>
+        </section>
+      </section>
+
+      <!-- 13 · ПРОФАЙЛЕР -->
+      <section>
+        <p class="label">Диагностика</p>
+        <h2>Измерять, а не угадывать</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Профилировщик</h4>
+            <p>в IDEA встроен: <span class="text-primary">Run with Profiler</span>; показывает, где программа проводит время</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Hotspot</h4>
+            <p>метод-«пожиратель»: <span class="text-primary">единицы методов</span> съедают основное время</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Правило</h4>
+            <p>оптимизировать только <span class="text-primary">измеренное</span>, а не «кажется, тут медленно»</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">«Мне кажется, тормозит здесь» — <span class="highlight-2">не аргумент</span>. Аргумент — профиль.</p>
+      </section>
+
+      <!-- 14 · АЛГОРИТМ ОТЛАДКИ -->
+      <section>
+        <p class="label">Метод</p>
+        <h2>Алгоритм отладки</h2>
+        <div class="bar bar-accent-4"></div>
+
+        <div class="grid-5" style="margin-top: var(--space-md); display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-sm);">
+          <div class="card card-accent-1" style="padding: 1em;">
+            <h4>1 · Воспроизвести</h4>
+            <p>минимальный сценарий</p>
+          </div>
+          <div class="card card-accent-2" style="padding: 1em;">
+            <h4>2 · Локализовать</h4>
+            <p>логи + breakpoints</p>
+          </div>
+          <div class="card card-accent-5" style="padding: 1em;">
+            <h4>3 · Причина</h4>
+            <p>гипотеза → эксперимент</p>
+          </div>
+          <div class="card card-accent-3" style="padding: 1em;">
+            <h4>4 · Исправить</h4>
+            <p>минимальная правка</p>
+          </div>
+          <div class="card card-accent-4" style="padding: 1em;">
+            <h4>5 · Тест</h4>
+            <p>закрыть регрессию</p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Шаг 2 — половина работы: метод бинарного поиска (половина системы «чиста» или «грязна») сужает область за считанные шаги</p>
+      </section>
+
+      <!-- 15 · ДЕМО -->
+      <section>
+        <p class="label">Демонстрация</p>
+        <h2>Чиним echo под дебаггером</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <pre style="width: 100%;"><code class="language-java" data-trim>String process(String line) {
+    return line.substring(0, line.length() - 1);   // «убираем \n»
+}</code></pre>
+
+        <ul style="margin-top: var(--space-sm);">
+          <li>Симптом: на <code>""</code> — <code>StringIndexOutOfBounds</code>; на строках — пропадает последняя буква</li>
+          <li>Breakpoint на строке → смотрим <code>line</code>: пустая строка даёт конец <code>-1</code></li>
+          <li>Причина найдена; фикс → <b>тест на оба случая</b> — регрессия закрыта</li>
+        </ul>
+      </section>
+
+      <!-- 16 · КОНСПЕКТ -->
+      <section>
+        <p class="label">Конспект</p>
+        <h2>Ключевые определения</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md); column-gap: var(--space-lg); row-gap: var(--space-md);">
+          <div>
+            <h4 class="text-accent-1">Отладка</h4>
+            <p class="text-secondary">поиск причины отказа: от симптома к дефекту</p>
+          </div>
+          <div>
+            <h4 class="text-accent-1">Breakpoint</h4>
+            <p class="text-secondary">точка остановки: поток замирает, состояние наблюдаемо</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Step Into / Over / Out</h4>
+            <p class="text-secondary">войти в вызов / выполнить строку / выйти из метода</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Стек вызовов</h4>
+            <p class="text-secondary">цепочка вызовов от текущей строки до main</p>
+          </div>
+          <div>
+            <h4 class="text-accent-2">Уровень логирования</h4>
+            <p class="text-secondary">TRACE→DEBUG→INFO→WARN→ERROR; порог настраивается</p>
+          </div>
+          <div>
+            <h4 class="text-accent-2">Stack trace</h4>
+            <p class="text-secondary">печать момента исключения; «Caused by» — первопричина</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Hotspot</h4>
+            <p class="text-secondary">метод, съедающий основное время; виден профилировщиком</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Отладочный класс</h4>
+            <p class="text-secondary">вспомогательный код диагностики: замеры, трассировка</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 17 · ИТОГ -->
+      <section>
+        <p class="label">Итоги</p>
+        <h2>Три главных вывода</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Дебаггер сильнее печати</h4>
+            <p>заморозка времени: наблюдай и меняй состояние без правки кода</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Логи — глаза системы</h4>
+            <p>уровни, контекст и корреляция; писать для будущего разбора полётов</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Метод важнее инструментов</h4>
+            <p>гипотеза → эксперимент; одна правка за раз; измерять, а не угадывать</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Не угадывай — <span class="highlight-2">проверяй</span>.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="vendor/reveal/reveal.js"></script>
+  <script src="vendor/reveal/plugin/highlight/highlight.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      center: true,
+      transition: 'slide',
+      transitionSpeed: 'default',
+      backgroundTransition: 'slide',
+      width: 1920,
+      height: 1080,
+      margin: 0.08,
+      minScale: 0.2,
+      maxScale: 2.0,
+      controls: true,
+      progress: true,
+      slideNumber: 'h/v',
+      plugins: [RevealHighlight]
+    });
+  </script>
+</body>
+</html>
