@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DNS: разрешение имён — Сетевое программирование</title>
+
+  <!-- Reveal.js (вендорено, работает офлайн) -->
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="vendor/reveal/plugin/highlight/monokai.css">
+
+  <!-- Тема курса -->
+  <link rel="stylesheet" href="theme/course-dark.css">
+
+  <!-- Шрифты локально (кириллица + латиница, офлайн) -->
+  <link rel="stylesheet" href="vendor/fonts/fonts.css">
+</head>
+<body>
+
+  <div class="slide-footer">Сетевое программирование</div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- 1 · ТИТУЛ -->
+      <section class="centered">
+        <p class="label">Сетевое программирование</p>
+        <h1>DNS: <span class="text-accent-1">разрешение</span><br><span class="text-accent-1">имён</span></h1>
+        <div class="bar"></div>
+        <p class="lead">Что происходит за 20 миллисекунд между Enter и началом загрузки страницы</p>
+      </section>
+
+      <!-- 2 · ЗАЧЕМ СПРАВОЧНИК -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>Зачем сети «телефонный справочник»</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Люди</h4>
+            <ul>
+              <li>помнят <b>имена</b>: example.com, vk.com</li>
+              <li>имя — бренд: переносится на другой адрес</li>
+              <li>по имени не видно: где сервер, сколько их</li>
+            </ul>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Сеть</h4>
+            <ul>
+              <li>работает с <b>адресами</b>: 93.184.216.34</li>
+              <li>маршрутизация — только по IP</li>
+              <li>адреса меняются: сервер переехал — имя осталось</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">DNS — распределённая база перевода <span class="highlight-1">имён в адреса</span>.</p>
+      </section>
+
+      <!-- 3 · ИСТОРИЯ -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>От одного файла к мировой системе</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div style="margin-top: var(--space-sm);">
+          <div class="card" style="padding: 0.9em 1.6em; margin-bottom: 0.5em;">
+            <h4>1970-е — hosts.txt <span class="text-muted" style="font-weight: 400; font-size: 0.8em;">— «справочник интернета»</span></h4>
+            <p>один файл: имя → адрес; ведёт Стэнфорд, все качают по FTP; машин сотни — и file кончился</p>
+          </div>
+          <div class="card card-accent-2" style="padding: 0.9em 1.6em; margin-bottom: 0.5em;">
+            <h4>1983 — Пол Мокапетрис создаёт DNS <span class="text-muted" style="font-weight: 400; font-size: 0.8em;">в USC</span></h4>
+            <p>распределённая иерархия, кэширование, делегирование — принципы живы без изменений</p>
+          </div>
+          <div class="card card-accent-5" style="padding: 0.9em 1.6em;">
+            <h4>1987 — RFC 1034 / 1035 <span class="text-muted" style="font-weight: 400; font-size: 0.8em;">— действующая спецификация</span></h4>
+            <p>тот же протокол держит современный интернет: миллиарды имён, миллионы запросов в секунду</p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Наследие hosts.txt живо: файл <code>hosts</code> в ОС проверяется <b>до</b> DNS — вернёмся к нему в конце</p>
+      </section>
+
+      <!-- 4 · ЛЕГЕНДА: FACEBOOK -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>День, когда Facebook исчез</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-1-2" style="margin-top: var(--space-md); align-items: center;">
+          <div class="centered">
+            <p class="stat text-accent-3" style="font-size: var(--size-stat);">6 часов</p>
+            <p class="stat-label">4 октября 2021 · facebook.com, whatsapp, instagram</p>
+          </div>
+          <ul>
+            <li>Ошибка конфигурации сняла объявления маршрутов Facebook из BGP — сеть «ушла в себя»</li>
+            <li>Их <b>DNS-серверы стали недостижимы</b> → имя facebook.com перестало разрешаться</li>
+            <li>Для мира это выглядело так: <span class="highlight-3">«весь Facebook упал»</span> — хотя «упал» только справочник</li>
+            <li>Инженеры ехали в ДЦ: удалённый доступ тоже резолвился через их же DNS…</li>
+          </ul>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-md);">Нет DNS — «нет интернета»<span class="text-muted" style="font-weight: 400;">, даже если серверы живы</span>.</p>
+      </section>
+
+      <!-- 5 · ИЕРАРХИЯ -->
+      <section>
+        <p class="label">Как устроено</p>
+        <h2>Иерархия: дерево имён</h2>
+        <div class="bar"></div>
+
+        <div style="margin-top: var(--space-sm);">
+          <div class="card card-accent-4 centered" style="padding: 0.7em 1.4em; max-width: 420px; margin: 0 auto 0.5em;">
+            <h4>корень «.» <span class="text-muted" style="font-weight:400; font-size:0.85em;">— 13 серверных кластеров</span></h4>
+          </div>
+          <div class="centered" style="margin: 0.3em 0;">
+            <span class="flow-arrow">↓</span>
+          </div>
+          <div class="grid-4" style="max-width: 1000px; margin: 0 auto 0.5em;">
+            <div class="card card-accent-5 centered" style="padding: 0.6em;">
+              <h4>.ru · .com · .org</h4>
+              <p>TLD — домены верхнего уровня</p>
+            </div>
+            <div class="card card-accent-5 centered" style="padding: 0.6em;">
+              <h4>.edu · .gov</h4>
+              <p>тематические</p>
+            </div>
+            <div class="card card-accent-5 centered" style="padding: 0.6em;">
+              <h4>.moscow</h4>
+              <p>географические</p>
+            </div>
+            <div class="card card-accent-5 centered" style="padding: 0.6em;">
+              <h4>.онлайн</h4>
+              <p>новые, 2000+</p>
+            </div>
+          </div>
+          <div class="centered" style="margin: 0.3em 0;">
+            <span class="flow-arrow">↓</span>
+          </div>
+          <div class="card card-accent-2 centered" style="padding: 0.7em 1.4em; max-width: 640px; margin: 0 auto;">
+            <h4>example.ru <span class="text-muted" style="font-weight:400; font-size:0.85em;">— авторитативный сервер зоны знает всё о своём поддереве</span></h4>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Каждый уровень делегирует нижним: корень не знает адресов — он знает, <b>кто знает</b></p>
+      </section>
+
+      <!-- 6 · АНАТОМИЯ ИМЕНИ -->
+      <section>
+        <p class="label">Как устроено</p>
+        <h2>Анатомия доменного имени</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <svg viewBox="0 0 1200 560" style="width: 100%; max-width: 1150px; margin: 0 auto; display: block;">
+          <!-- выноска корня -->
+          <line x1="1004" y1="140" x2="1004" y2="172" stroke="#ff9e64" stroke-width="2"/>
+          <text x="1004" y="86" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="20" fill="#565f89">(в браузере скрыт)</text>
+          <text x="1004" y="120" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="26" font-weight="700" fill="#ff9e64">корень «.»</text>
+
+          <!-- само имя -->
+          <text x="167" y="210" font-family="'JetBrains Mono',monospace" font-size="96" font-weight="700" fill="#7aa2f7">www</text>
+          <text x="340" y="210" font-family="'JetBrains Mono',monospace" font-size="96" font-weight="700" fill="#565f89">.</text>
+          <text x="398" y="210" font-family="'JetBrains Mono',monospace" font-size="96" font-weight="700" fill="#9ece6a">example</text>
+          <text x="801" y="210" font-family="'JetBrains Mono',monospace" font-size="96" font-weight="700" fill="#565f89">.</text>
+          <text x="859" y="210" font-family="'JetBrains Mono',monospace" font-size="96" font-weight="700" fill="#bb9af7">ru</text>
+          <text x="975" y="210" font-family="'JetBrains Mono',monospace" font-size="96" font-weight="700" fill="#ff9e64">.</text>
+
+          <!-- подчёркивания -->
+          <rect x="167" y="232" width="173" height="6" rx="3" fill="#7aa2f7"/>
+          <rect x="398" y="232" width="403" height="6" rx="3" fill="#9ece6a"/>
+          <rect x="859" y="232" width="115" height="6" rx="3" fill="#bb9af7"/>
+          <rect x="975" y="232" width="58" height="6" rx="3" fill="#ff9e64"/>
+
+          <!-- соединители вниз -->
+          <line x1="253" y1="238" x2="253" y2="268" stroke="#7aa2f7" stroke-width="2"/>
+          <line x1="600" y1="238" x2="600" y2="268" stroke="#9ece6a" stroke-width="2"/>
+          <line x1="917" y1="238" x2="917" y2="268" stroke="#bb9af7" stroke-width="2"/>
+
+          <!-- карточки-расшифровки -->
+          <rect x="83"  y="268" width="340" height="96" rx="12" fill="#24283b" stroke="#7aa2f7" stroke-width="2"/>
+          <text x="253" y="312" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="27" font-weight="700" fill="#7aa2f7">поддомен · hostname</text>
+          <text x="253" y="344" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#a9b1d6">конкретный сервер</text>
+
+          <rect x="385" y="268" width="430" height="96" rx="12" fill="#24283b" stroke="#9ece6a" stroke-width="2"/>
+          <text x="600" y="312" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="27" font-weight="700" fill="#9ece6a">домен 2-го уровня</text>
+          <text x="600" y="344" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#a9b1d6">зона example.ru — здесь записи</text>
+
+          <rect x="767" y="268" width="300" height="96" rx="12" fill="#24283b" stroke="#bb9af7" stroke-width="2"/>
+          <text x="917" y="312" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="27" font-weight="700" fill="#bb9af7">TLD · зона .ru</text>
+          <text x="917" y="344" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="21" fill="#a9b1d6">реестр: КЦ домена .RU</text>
+
+          <!-- нижняя сноска -->
+          <text x="600" y="500" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="23" fill="#565f89">FQDN — полное имя со всеми метками и точкой в конце · до 253 символов на имя, до 63 на метку · регистр не важен</text>
+          <text x="600" y="470" text-anchor="middle" font-family="'Golos Text',sans-serif" font-size="22" fill="#565f89">иерархия растёт слева направо: уровень зоны задаёт её правый конец</text>
+        </svg>
+
+        <ul style="margin-top: var(--space-sm);">
+          <li><b>Зона</b> — часть дерева, которую ведёт один авторитативный сервер (или их группа)</li>
+          <li>У одного имени — <span class="highlight-1">сколько угодно записей</span>: несколько адресов, MX, TXT…</li>
+        </ul>
+      </section>
+
+      <!-- 7 · КТО ВЛАДЕЕТ ИМЕНАМИ -->
+      <section>
+        <p class="label">Как устроено</p>
+        <h2>Кто владеет именами</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">ICANN</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">реестры зон (.ru — координационный центр)</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">регистраторы</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">вы: арендуете домен</span>
+        </div>
+
+        <ul>
+          <li>Домен нельзя купить навсегда — только <b>арендовать</b> на год и продлевать</li>
+          <li>Регистратор назначает <b>NS-серверы</b>: где лежит ваша зона</li>
+          <li>Цены: .ru — от ~200 ₽/год; .com — ~10–15 $/год; «красивые» домены — аукционы</li>
+          <li>Не продлил — через льготный период имя <span class="highlight-3">уходит свободным</span>: бесчисленные проекты так теряли свои домены</li>
+        </ul>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Правая кнопка мыши по сайту не даст ответа «чей домен» — а WHOIS даст: владелец, регистратор, даты</p>
+      </section>
+
+      <!-- 8 · РЕКУРСИЯ VS ИТЕРАЦИЯ  (+ deep: резолверы) -->
+      <section>
+        <section>
+          <p class="label">Механика</p>
+          <h2>Рекурсивный и итеративный запрос</h2>
+          <div class="bar"></div>
+
+          <div class="grid-3" style="margin-top: var(--space-sm);">
+            <div class="card">
+              <h4>Корень «.»</h4>
+              <p>«не знаю адрес, но знаю, кто ведёт <span class="text-primary">.ru</span>»</p>
+            </div>
+            <div class="card card-accent-5">
+              <h4>TLD .ru</h4>
+              <p>«не знаю адрес, но знаю <span class="text-primary">NS зоны example.ru</span>»</p>
+            </div>
+            <div class="card card-accent-2">
+              <h4>Авторитативный</h4>
+              <p>«знаю всё о зоне: <span class="text-primary">вот A-запись</span>»</p>
+            </div>
+          </div>
+
+          <div class="flow-lane" style="margin-top: var(--space-lg);">
+            <span class="flow-pill">клиент</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">резолвер: сделай всё за меня</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">корень</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">.ru</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">авторитативный</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">ответ в кэш</span>
+          </div>
+
+          <ul style="margin-top: var(--space-md);">
+            <li><b>Рекурсивный</b> запрос — клиент→резолвер: «дай готовый ответ»</li>
+            <li><b>Итеративные</b> — резолвер сам обходит дерево по подсказкам</li>
+            <li>Итог: клиент ждёт <span class="highlight-1">одного ответа</span>, всю беготню делает резолвер</li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Резолверы: кто делает беготню</h2>
+          <div class="deep-rule"></div>
+          <div class="grid-3">
+            <div class="card">
+              <h4>Ваш провайдер</h4>
+              <p>выдаётся автоматически с DHCP; видит <span class="text-primary">все ваши запросы</span></p>
+            </div>
+            <div class="card card-accent-2">
+              <h4>8.8.8.8 · Google</h4>
+              <p>публичный, быстрый; ответы из огромного кэша</p>
+            </div>
+            <div class="card card-accent-3">
+              <h4>1.1.1.1 · Cloudflare</h4>
+              <p>позиционируется как «приватный»: не логирует</p>
+            </div>
+          </div>
+          <ul style="margin-top: var(--space-md);">
+            <li>Смена резолвера — это выбор: <b>скорость / приватность / блокировки</b></li>
+            <li>Сетевые фильтры и «заблокированные сайты» часто работают именно на уровне резолвера</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 9 · UDP 53  (+ deep: размер) -->
+      <section>
+        <section>
+          <p class="label">Механика</p>
+          <h2>Почему DNS ездит по UDP</h2>
+          <div class="bar bar-accent-3"></div>
+
+          <div class="grid-2" style="margin-top: var(--space-md);">
+            <div class="card">
+              <h4 class="text-accent-2">UDP: один запрос — один ответ</h4>
+              <ul>
+                <li>без рукопожатия: <b>1 пакет вместо 3+2</b></li>
+                <li>запрос кэшируется — большинство ответов <span class="text-primary">мгновенные</span></li>
+                <li>потерялся — клиент просто <span class="text-primary">спросит снова</span></li>
+              </ul>
+            </div>
+            <div class="card card-accent-5">
+              <h4 class="text-accent-5">TCP: запасной путь</h4>
+              <ul>
+                <li>ответ не влез в дейтаграмму — флаг <b>truncated</b></li>
+                <li>резолвер повторяет по TCP: <span class="text-primary">порт 53 тоже</span></li>
+                <li>передача целых зон между серверами — только TCP</li>
+              </ul>
+            </div>
+          </div>
+
+          <p class="impact" style="margin-top: var(--space-lg);">Короткий запрос-ответ без состояния — <span class="highlight-3">идеальная работа для UDP</span>.</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Сколько влезает в ответ</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Изначальный лимит UDP-дейтаграммы DNS — <b>512 байт</b>: несколько записей + метки</li>
+            <li><b>EDNS0</b> (расширение, RFC 6891): договорились о пакетах до 4096 байт — так живут длинные DNSSEC-ответы</li>
+            <li>Больше — флаг truncated и повтор по TCP</li>
+            <li>Поэтому «много A-записей для балансировки» — десяток-другой, не сотни: ответ должен оставаться компактным</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 10 · ЗАПИСИ  (+ deep: TTL) -->
+      <section>
+        <section>
+          <p class="label">Механика</p>
+          <h2>Типы записей</h2>
+          <div class="bar"></div>
+
+          <div class="hdr-grid" style="margin-top: var(--space-md);">
+            <div class="hcell flag"><b>A</b></div>
+            <div class="hcell" style="text-align: left;">имя → IPv4-адрес: <span class="text-primary">example.ru → 93.184.216.34</span></div>
+            <div class="hcell flag"><b>AAAA</b></div>
+            <div class="hcell" style="text-align: left;">имя → IPv6-адрес («quad-A»)</div>
+            <div class="hcell flag"><b>CNAME</b></div>
+            <div class="hcell" style="text-align: left;">псевдоним: имя → другое имя</div>
+            <div class="hcell flag"><b>MX</b></div>
+            <div class="hcell" style="text-align: left;">почтовый сервер зоны с приоритетом — из темы почты</div>
+            <div class="hcell flag"><b>NS</b></div>
+            <div class="hcell" style="text-align: left;">какой сервер авторитативен для зоны</div>
+            <div class="hcell flag"><b>TXT</b></div>
+            <div class="hcell" style="text-align: left;">произвольный текст: SPF/DKIM, подтверждение владения доменом</div>
+            <div class="hcell flag"><b>SOA</b></div>
+            <div class="hcell" style="text-align: left;">паспорт зоны: серийный номер, таймеры обновления</div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">У одного имени — записи нескольких типов одновременно: A + AAAA + MX + TXT…</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>TTL: почему «DNS уже починили, а у вас нет»</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>У каждой записи — <b>TTL</b> (time to live): сколько секунд ответ считать свежим</li>
+            <li>Типовые значения: от 60 с (балансировка) до 86 400 (сутки)</li>
+            <li>Сменили адрес сервера, а TTL был сутки — <b>половина интернета сутки ходит на старый</b>. Поэтому миграции начинают со снижения TTL заранее</li>
+            <li>Кэшируется и <b>отрицательный ответ</b> (NXDOMAIN): «такого имени нет» — тоже на какое-то время</li>
+          </ul>
+          <div class="card card-accent-4" style="margin-top: var(--space-md);">
+            <h4>Правило миграций</h4>
+            <p>За двое суток до переезда: TTL → 300; переезд; проверка; TTL обратно</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- 11 · ПРАКТИКА NSLOOKUP  (+ deep: dig) -->
+      <section>
+        <section>
+          <p class="label">Практика</p>
+          <h2>nslookup: три команды</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <pre style="width: 100%;"><code class="language-bash" data-trim># обычное разрешение: покажет адрес и резолвер
+nslookup example.com
+
+# конкретный тип записи - почтовые серверы домена
+nslookup -type=mx gmail.com
+
+# спросить конкретный сервер, а не системный
+nslookup example.com 8.8.8.8</code></pre>
+
+          <ul style="margin-top: var(--space-sm);">
+            <li>Работает одинаково в <b>Windows, macOS, Linux</b> — уже было в домашке</li>
+            <li>В ответе всегда два блока: <span class="highlight-1">кто отвечал</span> (резолвер) и <span class="highlight-2">что ответил</span></li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>dig: ответы как они есть</h2>
+          <div class="deep-rule"></div>
+          <pre style="width: 100%; font-size: var(--size-small);"><code class="language-text" data-trim>$ dig example.com
+
+;; QUESTION SECTION:      ; что спросили
+;example.com.     IN  A
+;; ANSWER SECTION:        ; что ответили (с TTL!)
+example.com.   86400  IN  A   93.184.216.34
+;; флаги: qr aa rd ra      ; aa = авторитативный ответ
+;; Query time: 12 msec     ; время запроса</code></pre>
+          <p class="text-muted" style="margin-top: var(--space-sm); font-size: var(--size-body);">dig показывает TTL прямо в ответе — и кто авторитативен. Инструмент администратора; в Windows — nslookup или WSL</p>
+        </section>
+      </section>
+
+      <!-- 12 · ТРИ УРОВНЯ КЭША -->
+      <section>
+        <p class="label">Кэширование</p>
+        <h2>Три уровня кэша</h2>
+        <div class="bar"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">браузер</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">операционная система</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">резолвер</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">авторитативный</span>
+        </div>
+
+        <ul>
+          <li><b>Браузер</b>: кэширует агрессивно — повторное открытие вкладки не порождает DNS вообще</li>
+          <li><b>ОС</b>: системный кэш + файл <code>hosts</code> — проверяется <span class="highlight-1">до</span> запросов в сеть</li>
+          <li><b>Резолвер</b>: общий кэш для тысяч пользователей — <span class="highlight-2">чаще всего ответ уже готов</span></li>
+        </ul>
+
+        <div class="chip-row" style="margin-top: var(--space-md);">
+          <span class="chip">сброс в Windows: <b>ipconfig /flushdns</b></span>
+          <span class="chip">Chrome: <b>chrome://net-internals/#dns</b></span>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Полный проход по дереву — редкость: 90%+ запросов заканчиваются на первых двух уровнях</p>
+      </section>
+
+      <!-- 13 · ОБРАТНЫЙ DNS  (+ deep: кто использует) -->
+      <section>
+        <section>
+          <p class="label">Глубже</p>
+          <h2>Обратное разрешение: PTR</h2>
+          <div class="bar bar-accent-5"></div>
+
+          <div class="flow-lane" style="margin: var(--space-md) 0;">
+            <span class="flow-pill">93.184.216.34</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">34.216.184.93.in-addr.arpa</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">PTR-запись</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">имя хоста</span>
+          </div>
+
+          <ul>
+            <li>Тот же DNS, только адрес <b>разворачивается и дописывается</b> в специальную зону</li>
+            <li>Зона <code>in-addr.arpa</code> — гигантское дерево на все IPv4-адреса интернета</li>
+            <li>Владелец <b>блока адресов</b> ведёт PTR для своих IP у провайдера</li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Кто полагается на PTR</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Почтовые серверы</b>: «у тебя нет PTR — твои письма в спам»: крупные получатели проверяют соответствие PTR и HELO</li>
+            <li><b>Логи</b>: читать «пришёл с mail.example.ru» приятнее, чем «с 93.184.x.x»</li>
+            <li><b>Антиспам и репутация</b>: списки репутаций адресов завязаны на обратные имена</li>
+          </ul>
+          <div class="card card-accent-4" style="margin-top: var(--space-md);">
+            <h4>Практика</h4>
+            <p>Поднимаете свой почтовый сервер — сначала PTR у провайдера, потом всё остальное</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- 14 · IPV6 -->
+      <section>
+        <p class="label">Глубже</p>
+        <h2>IPv6: вторая адресная книга</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">A + AAAA у одного имени</h4>
+            <p>имя знает оба адреса: <span class="text-primary">IPv4 93.184.216.34</span> и <span class="text-primary">IPv6 2606:2800:…</span></p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Кого выбрать?</h4>
+            <p>клиент с IPv6 предпочитает AAAA; нет — fallback на A: <span class="text-primary">dual-stack</span></p>
+          </div>
+        </div>
+
+        <ul style="margin-top: var(--space-md);">
+          <li>Обратная зона для IPv6 — <code>ip6.arpa</code>: 32 «ниббла» адреса задом наперёд</li>
+          <li>«Сайт недоступен по IPv6, хотя по IPv4 работает» — забытая AAAA-запись: <span class="highlight-3">классика инцидентов</span></li>
+        </ul>
+      </section>
+
+      <!-- 15 · ОТКАЗ DNS -->
+      <section>
+        <p class="label">Диагностика</p>
+        <h2>Отказ DNS: симптомы</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Как выглядит</h4>
+            <ul>
+              <li>«Не удаётся resolve DNS / найти сервер»</li>
+              <li>мессенджеры работают, сайты — нет</li>
+              <li>по IP (<code>http://93.184.216.34</code>) — <span class="text-primary">открывается!</span></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h4 class="text-accent-1">Проверяем по шагам</h4>
+            <ul>
+              <li><code>nslookup example.com</code> — резолвер вообще отвечает?</li>
+              <li><code>nslookup example.com 8.8.8.8</code> — другой резолвер поможет?</li>
+              <li>работает с 8.8.8.8 → проблема в резолвере провайдера</li>
+              <li>нет и там → проблема в зоне или сети</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">«Сайты не открываются» — <span class="highlight-1">в половине случаев это DNS</span>, а не «интернет».</p>
+      </section>
+
+      <!-- 16 · БЕЗОПАСНОСТЬ  (+ deep: DoH) -->
+      <section>
+        <section>
+          <p class="label">Безопасность</p>
+          <h2>Открытый UDP и подмены</h2>
+          <div class="bar bar-accent-4"></div>
+
+          <ul style="margin-top: var(--space-sm);">
+            <li>Ответ по UDP приходит <b>без подтверждения подлинности</b>: кто первый ответил — тот и прав</li>
+            <li><b>Спуфинг</b>: подложить фальшивый A-запись → пользователь на «vk.com», который совсем не vk.com</li>
+            <li><b>DNSSEC</b>: каждая зона подписана; записи несут криптографическую подпись, цепочка доверия — от корня</li>
+            <li>Проверяющий резолвер отбивает подделку; пока включён <span class="highlight-3">не везде</span> — .ru подписан, .com — частично</li>
+          </ul>
+
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Знакомая механика из HTTPS: та же идея цепочки доверия, что у сертификатов</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>DoH и DoT: шифрование запросов</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Классика: резолвер видит <b>все ваши домены</b>, провайдер — тоже; наблюдателю видно, «к чему вы ходите»</li>
+            <li><b>DoT</b> — DNS поверх TLS: порт 853, отдельный канал</li>
+            <li><b>DoH</b> — DNS поверх HTTPS: порт 443, <b>неотличим от обычного трафика</b>; браузеры используют по умолчанию</li>
+            <li>Побочный эффект: корпоративные фильтры и «родительский контроль» на уровне DNS перестают работать — источник споров</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 17 · GEO-DNS -->
+      <section>
+        <p class="label">Глубже</p>
+        <h2>geo-DNS: почему «сайт рядом»</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Одно имя — разные ответы</h4>
+            <p>резолвер из Москвы получает адрес сервера в Европе, из Владивостока — <span class="text-primary">в Азии</span></p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Кто решает?</h4>
+            <p>авторитативный сервер смотрит на <span class="text-primary">источник запроса</span> (резолвер клиента) и выбирает ближайший ЦОД</p>
+          </div>
+        </div>
+
+        <ul style="margin-top: var(--space-md);">
+          <li>Так работают <b>CDN</b> (Cloudflare, Akamai, CDNvideo): миллионы имён, ответ подбирается географией</li>
+          <li>Плюс балансировка: у имени <span class="highlight-2">десяток адресов</span>, клиент берёт «первый живой»</li>
+          <li>Поэтому «у вас сайт медленный, а у нас быстрый» может быть <b>буквально разными серверами</b></li>
+        </ul>
+      </section>
+
+      <!-- 18 · DNS ДЛЯ РАЗРАБОТЧИКА  (+ deep: делегирование) -->
+      <section>
+        <section>
+          <p class="label">Практика разработки</p>
+          <h2>DNS в работе разработчика</h2>
+          <div class="bar"></div>
+
+          <div class="grid-3" style="margin-top: var(--space-md);">
+            <div class="card">
+              <h4>/etc/hosts</h4>
+              <p>локальная подмена имён <span class="text-primary">до DNS</span>: «считай test.local моим сервером» — отладка без домена</p>
+            </div>
+            <div class="card card-accent-2">
+              <h4>Медленный первый запрос</h4>
+              <p>TTL истёк — резолвер идёт по дереву: <span class="text-primary">десятки мс</span>. Лечится: TTL повыше + тёплый резолвер</p>
+            </div>
+            <div class="card card-accent-5">
+              <h4>Миграции</h4>
+              <p>переезд сервера = смена A-записи: заранее снизить TTL, сменить, <span class="text-primary">проверить с 8.8.8.8</span>, вернуть</p>
+            </div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Файл hosts: Windows — <code>C:\Windows\System32\drivers\etc\hosts</code>, macOS/Linux — <code>/etc/hosts</code></p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Как домен попадает на серверы</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Купили домен → у регистратора указали <b>NS-серверы</b> (например, ns1.cloudflare.com)</li>
+            <li>Регистратор прописывает NS-записи в зоне <b>.ru</b> — домен «делегирован»</li>
+            <li>На NS-серверах заводите <b>файл зоны</b>: A, MX, TXT… У Cloudflare это веб-интерфейс</li>
+            <li>Делегирование занимает до <b>24–72 часов</b> — пока все резолверы увидят новые NS</li>
+          </ul>
+          <div class="card card-accent-4" style="margin-top: var(--space-md);">
+            <h4>Частая ошибка</h4>
+            <p>Сменили NS у регистратора, а записи зоны забыли перенести: домен «жив», но отвечает пустотой</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- 19 · ДЕМО -->
+      <section>
+        <p class="label">Демонстрация</p>
+        <h2>Резолвер в терминале</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <pre style="width: 100%;"><code class="language-bash" data-trim>nslookup example.com          # кто наш резолвер и что ответил
+nslookup -type=mx vk.com      # почтовые серверы живого домена
+nslookup -type=ns example.com # кто авторитативен за зоной
+nslookup example.com 1.1.1.1  # другой резолвер - другой взгляд</code></pre>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Четыре команды — и <span class="highlight-2">вся механика урока</span> видна за минуту.</p>
+      </section>
+
+      <!-- 20 · ПУТЬ ЗАПРОСА -->
+      <section>
+        <p class="label">Итог схемы</p>
+        <h2>Один запрос за 60 секунд</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">Enter</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">кэш браузера?</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">кэш ОС / hosts?</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">резолвер</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">корень → TLD → авторитативный</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">адрес в кэш</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">TCP к серверу</span>
+        </div>
+
+        <ul>
+          <li>Всё это — <b>миллисекунды</b>; чаще всего — только первый шаг</li>
+          <li>И только <span class="highlight-1">после</span> DNS начинается то, что мы изучали раньше: TCP-рукопожатие и HTTP</li>
+        </ul>
+      </section>
+
+      <!-- 21 · КОНСПЕКТ -->
+      <section>
+        <p class="label">Конспект</p>
+        <h2>Ключевые определения</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md); column-gap: var(--space-lg); row-gap: var(--space-sm);">
+          <div>
+            <h4 class="text-accent-1">DNS</h4>
+            <p class="text-secondary">распределённая система перевода имён в адреса</p>
+          </div>
+          <div>
+            <h4 class="text-accent-1">Домен / зона</h4>
+            <p class="text-secondary">часть дерева имён, которую ведёт один авторитативный сервер</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Резолвер</h4>
+            <p class="text-secondary">сервер-посредник: принимает рекурсивные запросы, обходит дерево</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Авторитативный сервер</h4>
+            <p class="text-secondary">держит записи зоны; его ответ — истина</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">TTL</h4>
+            <p class="text-secondary">время жизни записи в кэше, в секундах</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Рекурсия / итерация</h4>
+            <p class="text-secondary">«сделай за меня» / «иди спрашивай сам по подсказкам»</p>
+          </div>
+          <div>
+            <h4 class="text-accent-2">FQDN</h4>
+            <p class="text-secondary">полное имя с точкой в конце: www.example.ru.</p>
+          </div>
+          <div>
+            <h4 class="text-accent-2">PTR / in-addr.arpa</h4>
+            <p class="text-secondary">обратное разрешение: адрес → имя</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">Делегирование</h4>
+            <p class="text-secondary">NS-записи передают поддерево другому серверу</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">geo-DNS</h4>
+            <p class="text-secondary">ответ зависит от географии спрашивающего</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 22 · ИТОГ -->
+      <section>
+        <p class="label">Итоги</p>
+        <h2>Три главных вывода</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Иерархия + кэш</h4>
+            <p>корень знает только «кто знает»; 90% ответов — из кэшей рядом с вами</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">TTL управляет миром</h4>
+            <p>скорость изменений в DNS = TTL; миграции начинаются с его снижения</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Нет DNS — нет «интернета»</h4>
+            <p>диагностика любого «не открывается» начинается с nslookup</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Enter → DNS → TCP → HTTP: <span class="highlight-1">теперь вы знаете весь путь</span>.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="vendor/reveal/reveal.js"></script>
+  <script src="vendor/reveal/plugin/highlight/highlight.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      center: true,
+      transition: 'slide',
+      transitionSpeed: 'default',
+      backgroundTransition: 'slide',
+      width: 1920,
+      height: 1080,
+      margin: 0.08,
+      minScale: 0.2,
+      maxScale: 2.0,
+      controls: true,
+      progress: true,
+      slideNumber: 'h/v',
+      plugins: [RevealHighlight]
+    });
+  </script>
+</body>
+</html>

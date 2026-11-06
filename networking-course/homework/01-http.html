@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Домашнее задание: HTTP на практике</title>
+<link rel="stylesheet" href="../lessons/01-sockets-tcp-udp/vendor/fonts/fonts.css">
+<style>
+  :root {
+    --ink: #1a1b26;
+    --ink-soft: #3c4260;
+    --muted: #6b7394;
+    --blue: #3b5cc4;
+    --green: #3f8f46;
+    --orange: #c25e2a;
+    --violet: #6f4fc4;
+    --paper: #ffffff;
+    --panel: #f5f6fb;
+    --panel-2: #eef0f8;
+    --border: #dfe3f0;
+    --code-bg: #22243a;
+    --code-ink: #dbe2ff;
+  }
+  @page { size: A4; margin: 15mm 14mm 17mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Golos Text', sans-serif;
+    font-size: 10.2pt; line-height: 1.5; color: var(--ink);
+  }
+  code, .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* ---------- Шапка ---------- */
+  .masthead {
+    border-bottom: 3px solid var(--ink); padding-bottom: 10px; margin-bottom: 14px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+  }
+  .masthead .course {
+    font-family: 'JetBrains Mono', monospace; font-size: 8pt; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--blue); font-weight: 500; margin-bottom: 6px;
+  }
+  .masthead h1 { font-size: 21pt; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; }
+  .score-badge {
+    text-align: center; background: var(--ink); color: #fff; border-radius: 10px;
+    padding: 8px 14px; flex-shrink: 0;
+  }
+  .score-badge .n { font-size: 17pt; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+  .score-badge .t { font-size: 7.5pt; text-transform: uppercase; letter-spacing: .1em; opacity: .75; }
+
+  /* ---------- Секции ---------- */
+  .part {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 2px solid var(--border);
+  }
+  .part .name { font-size: 12.5pt; font-weight: 800; }
+  .part .name .idx { color: var(--blue); font-family: 'JetBrains Mono', monospace; margin-right: 6px; }
+  .part .pts {
+    font-family: 'JetBrains Mono', monospace; font-size: 9pt; font-weight: 700;
+    color: #fff; background: var(--blue); border-radius: 999px; padding: 2px 10px;
+  }
+  .part.g .pts { background: var(--green); } .part.g .name .idx { color: var(--green); }
+  .part.o .pts { background: var(--orange); } .part.o .name .idx { color: var(--orange); }
+  .part.v .pts { background: var(--violet); } .part.v .name .idx { color: var(--violet); }
+
+  .task { margin: 9px 0; padding: 8px 10px; background: var(--panel); border-radius: 8px; page-break-inside: avoid; }
+  .task .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .task .head b { font-size: 10.5pt; font-weight: 700; }
+  .task .pts {
+    font-family: 'JetBrains Mono', monospace; font-size: 8pt; font-weight: 700;
+    color: var(--blue); white-space: nowrap;
+  }
+  .task.g .pts { color: var(--green); } .task.o .pts { color: var(--orange); } .task.v .pts { color: var(--violet); }
+  .task p, .task li { font-size: 9.6pt; color: var(--ink-soft); }
+  .task ul { margin: 2px 0 2px 14px; }
+  .task li { margin-bottom: 2px; }
+  .task .todo { margin-top: 4px; }
+  .task .todo b { color: var(--ink); }
+
+  pre.cmd {
+    background: var(--code-bg); color: var(--code-ink); border-radius: 6px;
+    padding: 7px 10px; margin: 5px 0; font-family: 'JetBrains Mono', monospace;
+    font-size: 8.6pt; line-height: 1.45; white-space: pre-wrap; word-break: break-all;
+  }
+  pre.cmd .c { color: #7dcfff; }          /* команда */
+  pre.cmd .a { color: #9ece6a; }          /* адрес/значение */
+  pre.cmd .f { color: #ff9e64; }          /* флаг */
+
+  .callout {
+    border-left: 4px solid var(--orange); background: #fdf3ec;
+    padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 7px 0;
+    font-size: 9.4pt; color: var(--ink-soft); page-break-inside: avoid;
+  }
+  .callout b { color: var(--orange); }
+  .callout.blue { border-left-color: var(--blue); background: #eef2fd; }
+  .callout.blue b { color: var(--blue); }
+
+  .ways { display: flex; gap: 8px; margin-top: 6px; }
+  .way {
+    flex: 1; border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 9px;
+    background: #fff; page-break-inside: avoid;
+  }
+  .way .tag { font-family: 'JetBrains Mono', monospace; font-size: 8pt; font-weight: 700; color: var(--violet); margin-bottom: 3px; }
+  .way p { font-size: 9pt; color: var(--ink-soft); }
+  .way pre.cmd { font-size: 8.1pt; }
+
+  table.check { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 9.6pt; }
+  table.check th {
+    text-align: left; font-size: 8pt; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); border-bottom: 2px solid var(--ink); padding: 4px 6px;
+  }
+  table.check td { border-bottom: 1px solid var(--border); padding: 5px 6px; color: var(--ink-soft); }
+  table.check tr:last-child td { border-bottom: none; }
+  table.check .box { font-size: 11pt; color: var(--muted); }
+  table.check .p { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--ink); text-align: right; }
+  table.check tr.total td { border-top: 2px solid var(--ink); font-weight: 800; color: var(--ink); padding-top: 6px; }
+  table.check tr.bonus td .p, table.check tr.bonus .p { color: var(--green); }
+
+  .submit {
+    background: var(--ink); color: #dfe3f8; border-radius: 10px; padding: 10px 14px;
+    margin-top: 12px; page-break-inside: avoid;
+  }
+  .submit .h { font-weight: 800; color: #fff; margin-bottom: 4px; font-size: 10.5pt; }
+  .submit p { font-size: 9.4pt; margin-bottom: 2px; }
+  .submit b { color: #9ece6a; }
+  .footnote { margin-top: 10px; font-size: 8.6pt; color: var(--muted); font-style: italic; }
+
+  .pb { page-break-before: always; }
+
+  .expect {
+    border: 2px solid var(--ink); border-radius: 10px;
+    padding: 10px 14px; margin: 10px 0; page-break-inside: avoid;
+  }
+  .expect .h { font-weight: 800; font-size: 11pt; margin-bottom: 5px; }
+  .expect ol { margin-left: 18px; }
+  .expect li { font-size: 9.6pt; color: var(--ink-soft); margin-bottom: 3px; }
+  .expect li b { color: var(--ink); }
+</style>
+</head>
+<body>
+
+  <!-- ================= ШАПКА ================= -->
+  <div class="masthead">
+    <div>
+      <div class="course">Сетевое программирование · домашнее задание</div>
+      <h1>HTTP на&nbsp;практике</h1>
+    </div>
+  </div>
+
+  <p style="font-size:9.8pt; color:var(--ink-soft);">
+    Задание выполняется дома на любом компьютере: нужны только <b>браузер и терминал</b>.
+    Операционная система — любая (Windows, macOS, Linux). Программировать можно на любом
+    языке — или вообще без языка (часть&nbsp;3, способ&nbsp;Б).
+  </p>
+
+  <div class="callout blue">
+    <b>Перед началом (Windows).</b> Терминал: <span class="mono">Win+R</span> → <span class="mono">cmd</span> → Enter.
+    Curl встроен в Windows 10/11, но в PowerShell слово <span class="mono">curl</span> занято
+    под другое — пишите <span class="mono">curl.exe</span> (с «.exe»). Проверка: <span class="mono">curl.exe --version</span>.
+    DevTools в браузере: <span class="mono">F12</span> (Network — запросы, Application — cookie).
+    Если <span class="mono">httpbin.org</span> недоступен — запасной адрес: <span class="mono">https://api.github.com</span>.
+  </div>
+
+  <!-- ================= ЧТО Я ХОЧУ ВИДЕТЬ ================= -->
+  <div class="expect">
+    <div class="h">Что я хочу видеть в&nbsp;работе</div>
+    <ol>
+      <li><b>Ваши выводы команд.</b> В отчёт идёт то, что напечатал <b>ваш</b> терминал на
+        <b>вашем</b> компьютере — с вашими адресами, именами и размерами.</li>
+      <li><b>Вывод-строка к каждому заданию.</b> После команды и её вывода — своими словами:
+        что вы увидели и что это значит. Не пересказ теории, а ваше наблюдение.</li>
+      <li><b>Скриншоты с панелью DevTools.</b> На скриншоте видна вкладка (Network / Application)
+        и выделенный запрос — чтобы было понятно, что смотрите именно вы.</li>
+      <li><b>Работающий скрипт части 3 и результат запуска.</b> Я должен запустить ваш файл
+        по вашей инструкции и увидеть то же, что видели вы.</li>
+      <li><b>Честные неудачи.</b> Если что-то не получилось — напишите, на каком шаге и какая
+        была ошибка. Это ценнее, чем скопированный чужой успех.</li>
+    </ol>
+  </div>
+
+  <!-- ================= ЧАСТЬ 1 ================= -->
+  <div class="part"><div class="name"><span class="idx">01</span>HTTP руками в терминале</div></div>
+
+  <div class="task">
+    <div class="head"><b>1.1 · Заголовки живого сайта</b></div>
+    <pre class="cmd"><span class="c">curl.exe</span> <span class="f">-sI</span> <span class="a">https://example.com</span></pre>
+    <p class="todo">Выпишите из ответа: <b>статус-код</b>, заголовки <b>Server</b> и <b>Content-Type</b>.
+    В отчёт: команда, весь вывод и одной строкой — что означает каждый пункт.</p>
+  </div>
+
+  <div class="task">
+    <div class="head"><b>1.2 · Три кода ответа</b></div>
+    <p>Найдите адреса, которые дают:</p>
+    <ul>
+      <li><b>200</b> — любой существующий сайт;</li>
+      <li><b>3xx</b> — редирект, подсказка: <span class="mono">curl.exe -sI https://httpbin.org/redirect/2</span> (сокращатели ссылок тоже подходят, но не все);</li>
+      <li><b>404</b> — любой сайт + несуществующая страница, например <span class="mono">/takoi-stranitsy-net</span>.</li>
+    </ul>
+    <p class="todo">В отчёт: таблица <b>адрес | код | что означает</b> + ответ одной строкой:
+    чем 3xx отличается от 404 с точки зрения браузера?</p>
+  </div>
+
+  <div class="task">
+    <div class="head"><b>1.3 · POST с телом запроса</b></div>
+    <pre class="cmd"><span class="c">curl.exe</span> <span class="f">-d</span> <span class="a">'{ "name": "Ivan" }'</span> <span class="f">-H</span> <span class="a">"Content-Type: application/json"</span> <span class="a">https://httpbin.org/post</span></pre>
+    <p>Сервис «эхом» возвращает всё, что вы отправили. Найдите в ответе раздел <span class="mono">json</span> —
+    там ваши данные. Поменяйте имя на своё и отправьте снова.</p>
+    <p class="todo">В отчёт: обе команды и оба ответа (можно сократить до раздела <span class="mono">json</span>).</p>
+  </div>
+
+  <!-- ================= ЧАСТЬ 2 ================= -->
+  <div class="part g"><div class="name"><span class="idx">02</span>DevTools-детектив</div></div>
+  <p style="font-size:9.6pt; color:var(--ink-soft); margin-bottom:4px;">
+    Откройте любой сайт (кроме поисковиков), нажмите <span class="mono">F12</span> → вкладка
+    <span class="mono">Network</span> → обновите страницу (<span class="mono">Ctrl+R</span>).
+  </p>
+
+  <div class="task g">
+    <div class="head"><b>2.1 · Найдите редирект</b></div>
+    <p>Найдите в списке запрос со статусом <b>301/302</b>, кликните по нему. В Headers найдите
+    заголовок <b>Location</b> — куда сервер отправил браузер?</p>
+    <p class="todo">В отчёт: сайт, статус, адрес из <b>Location</b>.</p>
+  </div>
+
+  <div class="task g">
+    <div class="head"><b>2.2 · Сколько весит страница</b></div>
+    <p>Отсортируйте список по колонке Size и найдите <b>самый тяжёлый ресурс</b>. Внизу панели —
+    суммарная статистика: сколько всего запросов и килобайт.</p>
+    <p class="todo">В отчёт: самый тяжёлый ресурс (имя и размер), число запросов, общий объём.</p>
+  </div>
+
+  <div class="task g">
+    <div class="head"><b>2.3 · Cookie</b></div>
+    <p>Вкладка <span class="mono">Application</span> (Firefox: Хранилище) → <span class="mono">Cookies</span>.
+    Выпишите <b>имя</b> одного cookie и первые ~20 символов значения.</p>
+    <p class="todo">В отчёт: имя, кусочек значения и ваше предположение — зачем этот cookie:
+    сессия, настройки, реклама?</p>
+  </div>
+
+  <div class="task g">
+    <div class="head"><b>2.4 · GET против POST</b></div>
+    <p>С открытой панелью Network выполните поиск по сайту и попытку входа (любой сайт с логином).
+    Сравните: у какого запроса данные видны <b>в адресе</b> (после «?»), а у какого — <b>в теле</b> (вкладка Payload)?</p>
+    <p class="todo">В отчёт: два скриншота или описания — где оказались данные формы в GET и в POST.</p>
+  </div>
+
+  <!-- ================= ЧАСТЬ 3 ================= -->
+  <div class="part v pb"><div class="name"><span class="idx">03</span>Автоматизация запроса</div></div>
+
+  <p style="font-size:9.8pt; color:var(--ink-soft);">
+    Задание одно: сделать GET-запрос к <span class="mono">https://httpbin.org/json</span> и вывести:
+    <b>1)</b> статус-код, <b>2)</b> заголовок <span class="mono">Content-Type</span>,
+    <b>3)</b> значение поля <span class="mono">title</span> из ответа.
+    Выберите <b>один</b> из трёх способов — какой удобнее.
+  </p>
+
+  <div class="ways">
+    <div class="way">
+      <div class="tag">А · POWERSHELL</div>
+      <p>Встроен в Windows. Сохраните в файл <span class="mono">get.ps1</span>:</p>
+      <pre class="cmd">$r = Invoke-WebRequest "https://httpbin.org/json"
+$r.StatusCode
+$r.Headers["Content-Type"]
+($r.Content | ConvertFrom-Json).slideshow.title</pre>
+      <p>Запуск: <span class="mono">powershell -ExecutionPolicy Bypass -File get.ps1</span></p>
+    </div>
+    <div class="way">
+      <div class="tag">Б · КОНСОЛЬ БРАУЗЕРА</div>
+      <p>Без инструментов: F12 → Console → вставьте:</p>
+      <pre class="cmd">fetch("https://httpbin.org/json")
+  .then(r => { console.log(r.status,
+    r.headers.get("Content-Type"));
+    return r.json(); })
+  .then(j => console.log(
+    j.slideshow.title));</pre>
+      <p>Скриншот результата консоли.</p>
+    </div>
+    <div class="way">
+      <div class="tag">В · ЛЮБОЙ ЯЗЫК</div>
+      <p>Python, Java, C# — что угодно. Отправьте запрос, разберите ответ.</p>
+      <p>Приложите исходник и строку «как запустить».</p>
+    </div>
+  </div>
+
+  <p style="font-size:9.8pt; color:var(--ink-soft); margin-top:8px;">
+    Дополнительно: пусть скрипт не падает при отсутствии интернета, а печатает понятное
+    сообщение, и умеет печатать все заголовки ответа.
+  </p>
+
+  <!-- ================= СДАЧА ================= -->
+  <div class="submit">
+    <div class="h">Как сдавать</div>
+    <p>Один архив <b>Фамилия_HTTP.zip</b>, внутри:</p>
+    <p>· <b>otchet.txt</b> — отчёт по частям 1 и 2: для каждого задания — что делали, команда, вывод (или скриншот), вывод одной строкой;</p>
+    <p>· скриншоты DevTools (часть 2);</p>
+    <p>· файл скрипта части 3 + строка «как запустить» (или скриншот консоли — если способ Б).</p>
+  </div>
+
+  <p class="footnote">Скриншоты и выводы должны быть вашими.</p>
+
+</body>
+</html>
