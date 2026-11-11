@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Домашнее задание: TLS и сертификаты</title>
+<link rel="stylesheet" href="../lessons/04-tls-certificates/vendor/fonts/fonts.css">
+<style>
+  :root {
+    --ink: #1a1b26;
+    --ink-soft: #3c4260;
+    --muted: #6b7394;
+    --blue: #3b5cc4;
+    --green: #3f8f46;
+    --orange: #c25e2a;
+    --violet: #6f4fc4;
+    --paper: #ffffff;
+    --panel: #f5f6fb;
+    --panel-2: #eef0f8;
+    --border: #dfe3f0;
+    --code-bg: #22243a;
+    --code-ink: #dbe2ff;
+  }
+  @page { size: A4; margin: 15mm 14mm 17mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: 'Golos Text', sans-serif;
+    font-size: 10.2pt; line-height: 1.5; color: var(--ink);
+  }
+  code, .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* ---------- Шапка ---------- */
+  .masthead {
+    border-bottom: 3px solid var(--ink); padding-bottom: 10px; margin-bottom: 14px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+  }
+  .masthead .course {
+    font-family: 'JetBrains Mono', monospace; font-size: 8pt; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--blue); font-weight: 500; margin-bottom: 6px;
+  }
+  .masthead h1 { font-size: 21pt; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; }
+
+  /* ---------- Секции ---------- */
+  .part {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 2px solid var(--border);
+  }
+  .part .name { font-size: 12.5pt; font-weight: 800; }
+  .part .name .idx { color: var(--blue); font-family: 'JetBrains Mono', monospace; margin-right: 6px; }
+  .part.g .name .idx { color: var(--green); }
+  .part.v .name .idx { color: var(--violet); }
+
+  .task { margin: 9px 0; padding: 8px 10px; background: var(--panel); border-radius: 8px; page-break-inside: avoid; }
+  .task .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .task .head b { font-size: 10.5pt; font-weight: 700; }
+  .task p, .task li { font-size: 9.6pt; color: var(--ink-soft); }
+  .task ul { margin: 2px 0 2px 14px; }
+  .task li { margin-bottom: 2px; }
+  .task .todo { margin-top: 4px; }
+  .task .todo b { color: var(--ink); }
+
+  pre.cmd {
+    background: var(--code-bg); color: var(--code-ink); border-radius: 6px;
+    padding: 7px 10px; margin: 5px 0; font-family: 'JetBrains Mono', monospace;
+    font-size: 8.6pt; line-height: 1.45; white-space: pre-wrap; word-break: break-all;
+  }
+  pre.cmd .c { color: #7dcfff; }          /* команда */
+  pre.cmd .a { color: #9ece6a; }          /* адрес/значение */
+  pre.cmd .f { color: #ff9e64; }          /* флаг */
+
+  .callout {
+    border-left: 4px solid var(--orange); background: #fdf3ec;
+    padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 7px 0;
+    font-size: 9.4pt; color: var(--ink-soft); page-break-inside: avoid;
+  }
+  .callout b { color: var(--orange); }
+  .callout.blue { border-left-color: var(--blue); background: #eef2fd; }
+  .callout.blue b { color: var(--blue); }
+
+  .expect {
+    border: 2px solid var(--ink); border-radius: 10px;
+    padding: 10px 14px; margin: 10px 0; page-break-inside: avoid;
+  }
+  .expect .h { font-weight: 800; font-size: 11pt; margin-bottom: 5px; }
+  .expect ol { margin-left: 18px; }
+  .expect li { font-size: 9.6pt; color: var(--ink-soft); margin-bottom: 3px; }
+  .expect li b { color: var(--ink); }
+
+  .submit {
+    background: var(--ink); color: #dfe3f8; border-radius: 10px; padding: 10px 14px;
+    margin-top: 12px; page-break-inside: avoid;
+  }
+  .submit .h { font-weight: 800; color: #fff; margin-bottom: 4px; font-size: 10.5pt; }
+  .submit p { font-size: 9.4pt; margin-bottom: 2px; }
+  .submit b { color: #9ece6a; }
+  .footnote { margin-top: 10px; font-size: 8.6pt; color: var(--muted); font-style: italic; }
+
+  .pb { page-break-before: always; }
+</style>
+</head>
+<body>
+
+  <!-- ================= ШАПКА ================= -->
+  <div class="masthead">
+    <div>
+      <div class="course">Сетевое программирование · домашнее задание</div>
+      <h1>TLS и&nbsp;сертификаты</h1>
+    </div>
+  </div>
+
+  <p style="font-size:9.8pt; color:var(--ink-soft);">
+    Задание выполняется дома на любом компьютере: нужны только <b>браузер и терминал</b>.
+    Операционная система — любая (Windows, macOS, Linux). Программировать не нужно.
+  </p>
+
+  <div class="callout blue">
+    <b>Выбор сайта.</b> Для заданий 1.1, 1.2 и 2.1 выберите любой HTTPS-сайт, домен которого
+    начинается с <b>первой буквы вашей фамилии в латинской раскладке</b>. Примеры:
+    Иванов — буква <span class="mono">I</span>, Петров — <span class="mono">P</span>,
+    Смирнов — <span class="mono">S</span>. Если на букву фамилии сайт найти не удалось —
+    возьмите первую букву имени. Запрещены: <span class="mono">example.com</span> и сайты,
+    упомянутые в слайдах и в этом листе. В отчёте укажите фамилию и выбранный сайт.
+    Сайт, не соответствующий правилу, задание не засчитывается.
+  </div>
+
+  <div class="callout blue">
+    <b>Перед началом (Windows).</b> Терминал: <span class="mono">Win+R</span> → <span class="mono">cmd</span> → Enter.
+    Команды <span class="mono">openssl</span> в чистом Windows нет — она входит в Git for Windows:
+    запустите <b>Git Bash</b> (Пуск → Git Bash). Проверка: <span class="mono">openssl version</span>.
+    Если Git Bash нет — установите с <span class="mono">git-scm.com</span> или используйте WSL.
+    <span class="mono">curl</span> встроен в Windows 10/11, в PowerShell пишите <span class="mono">curl.exe</span>.
+    Панель сертификата в браузере: <b>замок слева от адреса</b> → «Соединение защищено» → сведения о сертификате.
+  </div>
+
+  <!-- ================= ТРЕБОВАНИЯ ================= -->
+  <div class="expect">
+    <div class="h">Требования к&nbsp;отчёту</div>
+    <ol>
+      <li><b>Команда и её вывод</b> — с вашего компьютера, с вашим сайтом.</li>
+      <li><b>Ответ на каждый вопрос задания</b> — своими словами. Ответ вида
+        «скопировал вывод, там всё видно» не принимается.</li>
+      <li><b>Скриншоты</b> — только там, где задание их просит. На скриншоте видна адресная
+        строка или открытая панель.</li>
+      <li><b>Если что-то не получилось</b> — опишите, на каком шаге и какая была ошибка.</li>
+    </ol>
+  </div>
+
+  <!-- ================= ЧАСТЬ 1 ================= -->
+  <div class="part"><div class="name"><span class="idx">01</span>Сертификат в терминале</div></div>
+  <p style="font-size:9.6pt; color:var(--ink-soft); margin-bottom:4px;">
+    В командах замените <span class="mono">ВАШ_САЙТ</span> на выбранный домен.
+  </p>
+
+  <div class="task">
+    <div class="head"><b>1.1 · Поля сертификата</b></div>
+    <pre class="cmd"><span class="c">openssl</span> <span class="f">s_client</span> <span class="f">-connect</span> <span class="a">ВАШ_САЙТ:443</span> <span class="f">-servername</span> <span class="a">ВАШ_САЙТ</span> &lt;/dev/null \
+  <span class="f">| openssl</span> <span class="f">x509</span> <span class="f">-noout -subject -issuer -dates</span></pre>
+    <p class="todo">Выпишите <b>subject</b>, <b>issuer</b>, <b>notBefore</b>, <b>notAfter</b>.
+    Ответьте: кто выдал сертификат и на сколько дней он выдан (посчитайте от notBefore до notAfter).</p>
+  </div>
+
+  <div class="task">
+    <div class="head"><b>1.2 · Цепочка сертификатов</b></div>
+    <pre class="cmd"><span class="c">openssl</span> <span class="f">s_client</span> <span class="f">-connect</span> <span class="a">ВАШ_САЙТ:443</span> <span class="f">-servername</span> <span class="a">ВАШ_САЙТ</span></pre>
+    <p>Команда не завершается сама; выход — <span class="mono">Q</span> или <span class="mono">Ctrl+C</span>.
+    Найдите в выводе строки <span class="mono">depth=2</span>, <span class="mono">depth=1</span>,
+    <span class="mono">depth=0</span> и строку <span class="mono">Verify return code</span>.</p>
+    <p class="todo">Ответьте: сколько звеньев в цепочке; как называется корневой центр;
+    что означает выведенный код проверки.</p>
+  </div>
+
+  <!-- ================= ЧАСТЬ 2 ================= -->
+  <div class="part g"><div class="name"><span class="idx">02</span>Сертификат в браузере</div></div>
+
+  <div class="task g">
+    <div class="head"><b>2.1 · Панель сертификата</b></div>
+    <p>Откройте ваш сайт из части 1. Замок → «Соединение защищено» → сведения о сертификате.</p>
+    <p class="todo">Ответьте: перечислите имена из поля <b>SAN</b> (не больше четырёх); есть ли среди
+    них имя со звёздочкой (<span class="mono">*</span>) и какие поддомены оно покрывает; совпадают ли
+    издатель и срок в панели браузера с выводом openssl из задания 1.1. Приложите скриншот панели.</p>
+  </div>
+
+  <div class="task g">
+    <div class="head"><b>2.2 · Предупреждения браузера</b></div>
+    <p>Откройте по очереди три адреса (кнопку «продолжить» не нажимайте):</p>
+    <ul>
+      <li><span class="mono">https://expired.badssl.com</span></li>
+      <li><span class="mono">https://self-signed.badssl.com</span></li>
+      <li><span class="mono">https://wrong.host.badssl.com</span></li>
+    </ul>
+    <p class="todo">Для каждого адреса определите, какая из четырёх проверок браузера
+    <b>не прошла</b>: цепочка до доверенного корня / срок действия / имя в SAN / доверие к издателю.
+    Приложите по одному скриншоту и напишите ответ.</p>
+  </div>
+
+  <!-- ================= СДАЧА ================= -->
+  <div class="submit">
+    <div class="h">Как сдавать</div>
+    <p>Один архив <b>Фамилия_TLS.zip</b>, внутри:</p>
+    <p>· <b>otchet.txt</b> — команды, выводы, ответы на вопросы;</p>
+    <p>· скриншоты к заданиям 2.1 и 2.2.</p>
+  </div>
+
+  <p class="footnote">Скриншоты и выводы должны быть вашими.</p>
+
+</body>
+</html>

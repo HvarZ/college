@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TLS и сертификаты — Сетевое программирование</title>
+
+  <!-- Reveal.js (вендорено, работает офлайн) -->
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="vendor/reveal/plugin/highlight/monokai.css">
+
+  <!-- Тема курса -->
+  <link rel="stylesheet" href="theme/course-dark.css">
+
+  <!-- Шрифты локально (кириллица + латиница, офлайн) -->
+  <link rel="stylesheet" href="vendor/fonts/fonts.css">
+</head>
+<body>
+
+  <div class="slide-footer">Сетевое программирование</div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- 1 · ТИТУЛ -->
+      <section class="centered">
+        <p class="label">Сетевое программирование</p>
+        <h1><span class="text-accent-1">TLS</span> и <span class="text-accent-2">сертификаты</span></h1>
+        <div class="bar"></div>
+        <p class="lead">Как браузер понимает, что говорит именно с вашим банком, а не с самозванцем</p>
+      </section>
+
+      <!-- 2 · ТРИ УГРОЗЫ -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>Три угрозы открытого канала</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Подслушать</h4>
+            <p>посредник читает трафик: <span class="text-primary">пароли, карты, cookie</span> — как открытую книгу</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Подменить</h4>
+            <p>данные меняются <span class="text-primary">в пути</span>: сумма перевода, ответ API, страница</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Притвориться</h4>
+            <p>«сайт» — самозванец: внешний вид тот же, <span class="text-primary">сервер чужой</span></p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">HTTP — открытый текст: в чужом Wi-Fi ваш запрос виден целиком (урок 02)</p>
+
+        <p class="impact" style="margin-top: var(--space-md);">TLS закрывает все три: <span class="highlight-2">шифрование · целостность · подлинность</span>.</p>
+      </section>
+
+      <!-- 3 · ИСТОРИЯ -->
+      <section>
+        <p class="label">Введение</p>
+        <h2>От SSL к TLS</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div class="grid-4" style="margin-top: var(--space-md);">
+          <div>
+            <p class="stat text-accent-1" style="font-size: var(--size-h2);">1994</p>
+            <h4>SSL</h4>
+            <p class="text-secondary">Netscape: первые <span class="text-primary">покупки в вебе</span> требуют шифрования</p>
+          </div>
+          <div>
+            <p class="stat text-accent-1" style="font-size: var(--size-h2);">1999</p>
+            <h4>TLS 1.0</h4>
+            <p class="text-secondary">стандарт IETF; «переименование» <span class="text-primary">SSL → TLS</span></p>
+          </div>
+          <div>
+            <p class="stat text-accent-4" style="font-size: var(--size-h2);">2008</p>
+            <h4>TLS 1.2</h4>
+            <p class="text-secondary">AES, SHA-256 — на нём интернет <span class="text-primary">прожил десятилетие</span></p>
+          </div>
+          <div>
+            <p class="stat text-accent-2" style="font-size: var(--size-h2);">2018</p>
+            <h4>TLS 1.3</h4>
+            <p class="text-secondary"><span class="text-primary">быстрее и проще</span>: вырезаны все слабые шифры</p>
+          </div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">Слово «SSL» живёт в настройках и логах; сам SSL 3.0 отключён после атаки POODLE (2014), TLS 1.0/1.1 браузеры убрали в 2020</p>
+      </section>
+
+      <!-- 4 · СИММЕТРИЧНОЕ -->
+      <section>
+        <p class="label">Криптография</p>
+        <h2>Симметричное: один ключ</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-2">Как работает</h4>
+            <ul>
+              <li>один ключ <b>шифрует и расшифровывает</b></li>
+              <li>AES — стандарт; в процессорах есть <span class="text-primary">аппаратное ускорение</span></li>
+              <li>скорость — гигабиты в секунду: шифруем <span class="text-primary">весь трафик</span></li>
+            </ul>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Проблема</h4>
+            <ul>
+              <li>ключ должен быть <b>у обеих сторон</b></li>
+              <li>передать его по открытому каналу нельзя — <span class="text-primary">его услышат</span></li>
+              <li>сменить по договорённости «заранее» — <span class="text-primary">для миллиарда незнакомцев</span> не выйдет</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="chip-row" style="margin-top: var(--space-md);">
+          <span class="chip"><b>AES-128</b> · <b>AES-256</b> · <b>ChaCha20</b></span>
+          <span class="chip">если ключ один — это симметрия</span>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-md);">Симметрия — <span class="highlight-2">быстро и просто</span>, но ключ надо как-то передать.</p>
+      </section>
+
+      <!-- 5 · АСИММЕТРИЧНОЕ -->
+      <section>
+        <p class="label">Криптография</p>
+        <h2>Асимметричное: пара ключей</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <div class="ep-row" style="margin: var(--space-md) 0;">
+          <div class="ep-card">
+            <p class="ep-role">публичный</p>
+            <p class="ep-addr">замок <span class="text-accent-2">🔓</span></p>
+            <p class="text-secondary" style="font-size: var(--size-small);">раздавайте кому угодно</p>
+          </div>
+          <div class="net-link"><span class="net-label">пара</span></div>
+          <div class="ep-card">
+            <p class="ep-role">приватный</p>
+            <p class="ep-addr">ключ <span class="text-accent-3">🔒</span></p>
+            <p class="text-secondary" style="font-size: var(--size-small);">хранить в тайне всегда</p>
+          </div>
+        </div>
+
+        <ul>
+          <li>Что зашифровано <b>публичным</b> — расшифрует только <b>приватный</b></li>
+          <li>Математика: <b>RSA</b> (1977) и <b>эллиптические кривые</b> (ECC)</li>
+          <li>Медленнее симметрии на порядки → в TLS используется <span class="highlight-1">только для ключей и подписей</span></li>
+        </ul>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Публичный ключ можно «повесить на забор»: секрета в нём нет — без приватного он бесполезен</p>
+      </section>
+
+      <!-- 6 · ГИБРИД  (+ deep: подпись) -->
+      <section>
+        <section>
+          <p class="label">Криптография</p>
+          <h2>Гибрид: лучшее из двух</h2>
+          <div class="bar bar-accent-4"></div>
+
+          <div class="flow-lane" style="margin: var(--space-md) 0;">
+            <span class="flow-pill">асимметрия: обмен долями ключа</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">у обоих одинаковый сеансовый ключ</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">симметрия: шифруем все данные</span>
+          </div>
+
+          <ul>
+            <li>Асимметрия решает <b>главную проблему</b> — как договориться о ключе по открытому каналу</li>
+            <li><b>Сеансовый ключ</b> живёт одно соединение: новая сессия — новый ключ</li>
+            <li>Итог: скорость AES + <span class="highlight-1">безопасная передача ключей</span> без предварительной встречи</li>
+          </ul>
+
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Так работает и рукопожатие из урока 02 — теперь видно, что там происходило</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Подпись: шифрование наоборот</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Хеш</b> — «отпечаток» документа фиксированной длины: меняется от малейшей правки</li>
+            <li><b>Подпись</b> = хеш, зашифрованный <b>приватным</b> ключом; проверить может любой — <b>публичным</b></li>
+            <li>Подпись доказывает сразу два: документ <b>не менялся</b> и подписал <b>владелец приватного ключа</b></li>
+            <li>Это и есть механизм сертификатов: центр сертификации подписывает их своими ключами — дальше по слайдам</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 7 · РУКОПОЖАТИЕ  (+ deep: 0-RTT) -->
+      <section>
+        <section>
+          <p class="label">Механика</p>
+          <h2>Рукопожатие TLS 1.3</h2>
+          <div class="bar"></div>
+
+          <div class="flow-lane" style="margin: var(--space-md) 0;">
+            <span class="flow-pill">TCP-рукопожатие (урок 01)</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">ClientHello: шифры + доля ключа</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">ServerHello: шифр + доля + сертификат</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">оба вычисляют сеансовый ключ</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">зашифрованные данные</span>
+          </div>
+
+          <ul>
+            <li>Ключи <b>не передаются</b> — каждая сторона вычисляет их из долей (математика Диффи–Хеллмана)</li>
+            <li>Сервер доказывает личность <b>сертификатом</b> — тема следующей части</li>
+            <li>Весь обмен — <span class="highlight-1">1 круг</span> (RTT); в TLS 1.2 требовалось два</li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>0-RTT: данные в первом же пакете</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li><b>Возобновление</b>: вы уже ходили на сайт — есть «память» прошлой сессии</li>
+            <li><b>0-RTT</b>: запрос летит вместе с ClientHello, без ожидания ответа сервера</li>
+            <li>Подвох: пакет можно <b>повторно воспроизвести</b> — ранние данные годятся для GET, но не для POST «оплатить»</li>
+            <li>Знакомое слово из урока 02: <b>идемпотентность</b> — вот где она решает</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 8 · СЕРТИФИКАТ -->
+      <section>
+        <p class="label">Сертификаты</p>
+        <h2>Сертификат: паспорт сервера</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <div class="hdr-grid" style="margin-top: var(--space-md);">
+          <div class="hcell flag"><b>Subject</b></div>
+          <div class="hcell" style="text-align: left;">кому выдан: домен, организация</div>
+          <div class="hcell flag"><b>SAN</b></div>
+          <div class="hcell" style="text-align: left;">все имена, которые сертификат обслуживает; <span class="text-primary">wildcard: *.example.com</span></div>
+          <div class="hcell flag"><b>Issuer</b></div>
+          <div class="hcell" style="text-align: left;">кем выдан — центр сертификации</div>
+          <div class="hcell flag"><b>Validity</b></div>
+          <div class="hcell" style="text-align: left;">NotBefore → NotAfter: <span class="text-primary">срок действия</span></div>
+          <div class="hcell flag"><b>Public key</b></div>
+          <div class="hcell" style="text-align: left;">публичный ключ сервера</div>
+          <div class="hcell flag"><b>Подпись</b></div>
+          <div class="hcell" style="text-align: left;">подпись издателя: <span class="text-primary">паспорт не самодельный</span></div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Формат называется X.509. Посмотреть любой: в браузере — замок → «соединение защищено» → сертификат</p>
+      </section>
+
+      <!-- 9 · ЦЕПОЧКА ДОВЕРИЯ  (+ deep: DV/OV/EV) -->
+      <section>
+        <section>
+          <p class="label">Сертификаты</p>
+          <h2>Цепочка доверия</h2>
+          <div class="bar bar-accent-4"></div>
+
+          <div style="margin-top: var(--space-sm);">
+            <div class="card card-accent-4 centered" style="padding: 0.7em 1.4em; max-width: 900px; margin: 0 auto 0.5em;">
+              <h4>Корневой CA <span class="text-muted" style="font-weight:400; font-size:0.85em;">— ISRG Root X1, DigiCert Global Root… · ключ офлайн, в сейфе · 10–25 лет</span></h4>
+            </div>
+            <div class="centered" style="margin: 0.3em 0;">
+              <span class="flow-arrow">↓ подписал</span>
+            </div>
+            <div class="card card-accent-5 centered" style="padding: 0.7em 1.4em; max-width: 900px; margin: 0 auto 0.5em;">
+              <h4>Промежуточный CA <span class="text-muted" style="font-weight:400; font-size:0.85em;">— R11, GTS CA 1C3 · выдаёт сертификаты миллионам сайтов</span></h4>
+            </div>
+            <div class="centered" style="margin: 0.3em 0;">
+              <span class="flow-arrow">↓ подписал</span>
+            </div>
+            <div class="card card-accent-2 centered" style="padding: 0.7em 1.4em; max-width: 900px; margin: 0 auto;">
+              <h4>Сертификат сайта <span class="text-muted" style="font-weight:400; font-size:0.85em;">— example.com · дни-месяцы · выдаётся автоматически</span></h4>
+            </div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Промежуточное звено — защита корня: скомпрометировали звено → отзывают только его; корней ~150, и они зашиты в хранилища ОС и браузеров</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>DV, OV, EV: глубина проверки</h2>
+          <div class="deep-rule"></div>
+          <div class="grid-3">
+            <div class="card">
+              <h4>DV</h4>
+              <p>«домен ваш»: проверка автоматическая, <span class="text-primary">минуты</span>; так живёт большинство сайтов</p>
+            </div>
+            <div class="card card-accent-2">
+              <h4>OV</h4>
+              <p>проверена <span class="text-primary">организация</span>: её имя — в сертификате</p>
+            </div>
+            <div class="card card-accent-3">
+              <h4>EV</h4>
+              <p>строгие проверки; раньше давали «зелёную строку», <span class="text-primary">ныне браузеры не выделяют</span></p>
+            </div>
+          </div>
+          <ul style="margin-top: var(--space-md);">
+            <li>Замок в браузере у всех трёх <b>одинаковый</b> — тип сертификата о честности сайта не говорит</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 10 · ЧЕК-ЛИСТ БРАУЗЕРА -->
+      <section>
+        <p class="label">Сертификаты</p>
+        <h2>Что проверяет браузер</h2>
+        <div class="bar"></div>
+
+        <div class="grid-4" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4>1 · Цепочка</h4>
+            <p>сходится к корню из <span class="text-primary">хранилища ОС/браузера</span></p>
+          </div>
+          <div class="card card-accent-2">
+            <h4>2 · Срок</h4>
+            <p>сейчас между <span class="text-primary">NotBefore и NotAfter</span></p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>3 · Имя</h4>
+            <p>набранный домен входит в <span class="text-primary">SAN</span></p>
+          </div>
+          <div class="card card-accent-4">
+            <h4>4 · Подписи</h4>
+            <p>каждого звена верны, <span class="text-primary">ничего не отозвано</span></p>
+          </div>
+        </div>
+
+        <ul style="margin-top: var(--space-md);">
+          <li>Любой пункт «нет» → <span class="highlight-3">страница-предупреждение</span>, а не сайт</li>
+          <li>Всё это — <b>миллисекунды</b> при каждом HTTPS-соединении, без участия пользователя</li>
+        </ul>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Wildcard *.example.com покрывает все поддомены одного уровня: a.example.com — да, x.a.example.com — нет</p>
+      </section>
+
+      <!-- 11 · ОШИБКИ -->
+      <section>
+        <p class="label">Диагностика</p>
+        <h2>Читаем предупреждения браузера</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="hdr-grid" style="margin-top: var(--space-md); grid-template-columns: 1.1fr 1.4fr 1.4fr;">
+          <div class="hcell flag"><b>Предупреждение</b></div>
+          <div class="hcell"><b>Что случилось</b></div>
+          <div class="hcell"><b>Типичная причина</b></div>
+          <div class="hcell flag"><b>Срок истёк</b></div>
+          <div class="hcell">NotAfter позади — сертификат просрочен</div>
+          <div class="hcell">забыли продлить: мониторинг не ловит «бумажку»</div>
+          <div class="hcell flag"><b>Самоподписанный</b></div>
+          <div class="hcell">издатель — сам сайт, цепочки нет</div>
+          <div class="hcell">тестовый стенд без центра сертификации</div>
+          <div class="hcell flag"><b>Имя не совпадает</b></div>
+          <div class="hcell">домен не входит в SAN</div>
+          <div class="hcell">сертификат выдан другому имени; вход по IP</div>
+          <div class="hcell flag"><b>Издатель не доверен</b></div>
+          <div class="hcell">цепочка не доходит до корня</div>
+          <div class="hcell">корпоративный прокси перехватывает трафик</div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-md);">«Всё равно продолжить» = <span class="highlight-3">отключить проверку подлинности</span> — так и ловят MITM.</p>
+      </section>
+
+      <!-- 12 · LET'S ENCRYPT  (+ deep: продление) -->
+      <section>
+        <section>
+          <p class="label">Жизнь сертификата</p>
+          <h2>Let's Encrypt: сертификаты стали бесплатными</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <div class="grid-3" style="margin-top: var(--space-md);">
+            <div class="card">
+              <h4 class="text-accent-2">2015</h4>
+              <p>бесплатный центр сертификации; до него сертификаты — <span class="text-primary">за деньги и руками</span></p>
+            </div>
+            <div class="card card-accent-2">
+              <h4 class="text-accent-2">ACME</h4>
+              <p>протокол автовыдачи: сервер <span class="text-primary">доказал контроль домена</span> → сертификат выдан роботом (certbot)</p>
+            </div>
+            <div class="card card-accent-5">
+              <h4 class="text-accent-5">90 дней</h4>
+              <p>срок — нарочно короткий: <span class="text-primary">автопродление</span> вместо «вечных» бумаг</p>
+            </div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-lg); font-size: var(--size-body);">До 2015 HTTPS был «для банков»; после — нормой по умолчанию: сотни миллионов активных сертификатов</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Инцидент в 03:00 ночи</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>У сертификата есть NotAfter — и он <b>наступает</b>: сайт становится «небезопасным» посреди ночи, без взлома</li>
+            <li>Продление должно быть <b>автоматическим</b>, а сроки — под мониторингом с alarmами за неделю</li>
+            <li>Домен из урока 03 и сертификат — <b>два разных продления</b>: домен оплачен, а сертификат просрочен — классика</li>
+            <li>Лечится минутой: certbot renew — но кто-то должен был её настроить</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 13 · ТЕРМИНАЛ  (+ deep: разбор) -->
+      <section>
+        <section>
+          <p class="label">Демонстрация</p>
+          <h2>Сертификат в терминале</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <pre style="width: 100%;"><code class="language-bash" data-trim># цепочка и статус проверки живого сайта
+openssl s_client -connect example.com:443 -servername example.com
+
+# три главных поля: кому, кем, до каких пор
+openssl s_client -connect example.com:443 -servername example.com &lt;/dev/null \
+  | openssl x509 -noout -subject -issuer -dates
+
+# рукопожатие глазами curl: версия TLS и шифр
+curl -v https://example.com -o /dev/null</code></pre>
+
+          <div class="chip-row" style="margin-top: var(--space-md);">
+            <span class="chip">Windows: openssl есть в <b>Git Bash</b></span>
+            <span class="chip">браузер: замок → сертификат</span>
+            <span class="chip">DevTools → <b>Security</b></span>
+          </div>
+
+          <p class="impact" style="margin-top: var(--space-md);">Паспорт любого сайта — <span class="highlight-2">в открытом доступе</span>.</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Разбор вывода s_client</h2>
+          <div class="deep-rule"></div>
+          <pre style="width: 100%; font-size: var(--size-small);"><code class="language-text" data-trim>depth=2 C = US, O = Internet Security Research Group
+         CN = ISRG Root X1            ← корень: взят из хранилища ОС
+depth=1 C = US, O = Let's Encrypt, CN = R11
+                                      ← промежуточный: выдал сертификат
+depth=0 CN = example.com              ← сам сайт
+Verify return code: 0 (ok)            ← все проверки пройдены
+
+New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384</code></pre>
+          <p class="text-muted" style="margin-top: var(--space-sm); font-size: var(--size-body);">Три глубины — та самая цепочка со схемы; код 0 — чек-лист браузера, выполненный openssl</p>
+        </section>
+      </section>
+
+      <!-- 14 · АТАКИ  (+ deep: Heartbleed) -->
+      <section>
+        <section>
+          <p class="label">Безопасность</p>
+          <h2>Атаки: посредник и подмена</h2>
+          <div class="bar bar-accent-3"></div>
+
+          <div class="grid-2" style="margin-top: var(--space-md);">
+            <div class="card card-accent-3">
+              <h4 class="text-accent-3">MITM: «Free Airport Wi-Fi»</h4>
+              <ul>
+                <li>HTTP: посредник <b>читает и правит</b> всё</li>
+                <li>HTTPS: видит только <span class="text-primary">домен (SNI) и объём</span></li>
+                <li>расшифровать — не может</li>
+              </ul>
+            </div>
+            <div class="card card-accent-5">
+              <h4 class="text-accent-5">Подмена DNS (урок 03)</h4>
+              <ul>
+                <li>vk.com уведён на адрес фейка</li>
+                <li>но <b>сертификата для vk.com</b> у фейка нет</li>
+                <li>браузер закричит → <span class="text-primary">TLS — последняя линия</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <p class="impact" style="margin-top: var(--space-lg);">TLS превращает подмену из незаметной в <span class="highlight-2">громкую</span>.</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Heartbleed, 2014</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Баг в <b>реализации</b> OpenSSL (механизм heartbeat): на запрос «покажи N байт памяти» сервер отдавал больше, чем просили</li>
+            <li>Утекала память сервера: <b>ключи, пароли, сессии</b> — без взлома криптографии</li>
+            <li>Протокол был цел: ошибка — в коде; лечится патчем, а не новым стандартом</li>
+            <li>Мораль: протокол силён ровно настолько, насколько <b>исправна реализация</b> — обновляйте библиотеки</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 15 · ЧТО ЗАМОК НЕ ГАРАНТИРУЕТ -->
+      <section>
+        <p class="label">Безопасность</p>
+        <h2>Что замок не гарантирует</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4>Честность сайта</h4>
+            <p>фишинг тоже получает валидный DV-сертификат: замок — <span class="text-primary">не репутация</span></p>
+          </div>
+          <div class="card card-accent-3">
+            <h4>Тайну метаданных</h4>
+            <p>видны IP назначения, домен (SNI), объём и тайминги; <span class="text-primary">ECH шифрует SNI</span> — внедряется</p>
+          </div>
+          <div class="card card-accent-5">
+            <h4>Судьбу данных</h4>
+            <p>TLS доставит пароль на сервер — а дальше <span class="text-primary">зависит от сервера</span>, не от протокола</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Замок говорит: «канал до <span class="highlight-1">этого сервера</span> защищён» — <span class="highlight-3">и только</span>.</p>
+      </section>
+
+      <!-- 16 · mTLS -->
+      <section>
+        <p class="label">Глубже</p>
+        <h2>mTLS: сертификат не только у сервера</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md);">
+          <div class="card vs-col">
+            <h3 class="text-accent-1">Обычный TLS</h3>
+            <ul>
+              <li>сертификат предъявляет <span class="text-primary">только сервер</span></li>
+              <li>клиент — «анонимный посетитель»</li>
+              <li>так работает весь веб</li>
+            </ul>
+          </div>
+          <div class="card card-accent-2 vs-col">
+            <h3 class="text-accent-2">mTLS — взаимный</h3>
+            <ul>
+              <li>сертификаты <span class="text-primary">у обеих сторон</span></li>
+              <li>выдаёт внутренний CA компании</li>
+              <li>сервис-сервис без паролей</li>
+            </ul>
+          </div>
+        </div>
+
+        <ul style="margin-top: var(--space-md);">
+          <li>Где встречается: <b>внутренние API</b> и микросервисы, банк-клиенты, Kubernetes</li>
+          <li>Идея та же, что у пропусков: не «кто ты по паспорту», а <span class="highlight-1">«твой пропуск подписан нашим CA»</span></li>
+        </ul>
+      </section>
+
+      <!-- 17 · TLS НЕ ТОЛЬКО HTTPS -->
+      <section>
+        <p class="label">Глубже</p>
+        <h2>TLS не только в HTTPS</h2>
+        <div class="bar"></div>
+
+        <div class="hdr-grid" style="margin-top: var(--space-md);">
+          <div class="hcell flag"><b>HTTPS</b></div>
+          <div class="hcell">443</div>
+          <div class="hcell" style="text-align: left;">веб: весь внешний мир (урок 02)</div>
+          <div class="hcell flag"><b>SMTP + STARTTLS</b></div>
+          <div class="hcell">587</div>
+          <div class="hcell" style="text-align: left;">соединение стартует открытым и командой переводится в шифрованное</div>
+          <div class="hcell flag"><b>IMAPS / POP3S</b></div>
+          <div class="hcell">993 / 995</div>
+          <div class="hcell" style="text-align: left;">чтение почты — сразу по TLS</div>
+          <div class="hcell flag"><b>PostgreSQL</b></div>
+          <div class="hcell">5432</div>
+          <div class="hcell" style="text-align: left;">базы: sslmode=require — между приложением и СУБД</div>
+          <div class="hcell flag"><b>LDAPS</b></div>
+          <div class="hcell">636</div>
+          <div class="hcell" style="text-align: left;">каталоги Active Directory / LDAP</div>
+          <div class="hcell flag"><b>gRPC</b></div>
+          <div class="hcell">—</div>
+          <div class="hcell" style="text-align: left;">HTTP/2 — на практике всегда поверх TLS</div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">TLS — не «веб-настройка», а общий слой: любой байтовый протокол можно поднять поверх него</p>
+      </section>
+
+      <!-- 18 · ИТОГОВАЯ КАРТИНА -->
+      <section>
+        <p class="label">Итог схемы</p>
+        <h2>Весь путь — четыре урока на одной линии</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">DNS: имя → адрес</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">TCP: рукопожатие</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">TLS: ключи + сертификат</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">HTTP: запрос — ответ</span>
+        </div>
+
+        <ul>
+          <li>HTTP внутри <b>не меняется</b> — меняется обёртка: байты едут зашифрованными</li>
+          <li>TLS добавляет поверх TCP три свойства: <span class="highlight-2">шифрование · целостность · подлинность</span></li>
+          <li>Порт 443 — «обычный TCP-сокет» из урока 01, только с договорённостью TLS внутри</li>
+        </ul>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">QUIC из HTTP/3 шифруется всегда — TLS 1.3 встроен в сам протокол</p>
+      </section>
+
+      <!-- 19 · КОНСПЕКТ -->
+      <section>
+        <p class="label">Конспект</p>
+        <h2>Ключевые определения</h2>
+        <div class="bar"></div>
+
+        <div class="grid-2" style="margin-top: var(--space-md); column-gap: var(--space-lg); row-gap: var(--space-sm);">
+          <div>
+            <h4 class="text-accent-1">TLS</h4>
+            <p class="text-secondary">протокол шифрованного канала поверх TCP</p>
+          </div>
+          <div>
+            <h4 class="text-accent-1">Симметричное шифрование</h4>
+            <p class="text-secondary">один ключ: быстро, но его нужно передать</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Асимметричное</h4>
+            <p class="text-secondary">пара «публичный / приватный»: медленно, ключи раздают открыто</p>
+          </div>
+          <div>
+            <h4 class="text-accent-5">Сеансовый ключ</h4>
+            <p class="text-secondary">симметричный ключ одного соединения</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">Сертификат (X.509)</h4>
+            <p class="text-secondary">паспорт сервера: имя, срок, издатель, ключ, подпись</p>
+          </div>
+          <div>
+            <h4 class="text-accent-3">CA</h4>
+            <p class="text-secondary">центр сертификации: издатель и гарант</p>
+          </div>
+          <div>
+            <h4 class="text-accent-2">Цепочка доверия</h4>
+            <p class="text-secondary">сайт ← промежуточный CA ← корень из ОС</p>
+          </div>
+          <div>
+            <h4 class="text-accent-2">SAN</h4>
+            <p class="text-secondary">список имён, которые обслуживает сертификат</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">Рукопожатие</h4>
+            <p class="text-secondary">согласование ключей + проверка сертификата</p>
+          </div>
+          <div>
+            <h4 class="text-accent-4">MITM</h4>
+            <p class="text-secondary">посредник между клиентом и сервером</p>
+          </div>
+          <div>
+            <h4 class="text-accent-1">mTLS</h4>
+            <p class="text-secondary">сертификаты у обеих сторон — взаимная аутентификация</p>
+          </div>
+          <div>
+            <h4 class="text-accent-1">ACME</h4>
+            <p class="text-secondary">автовыдача и продление: Let's Encrypt, 90 дней</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 20 · ИТОГ -->
+      <section>
+        <p class="label">Итоги</p>
+        <h2>Три главных вывода</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Гибрид</h4>
+            <p>асимметрия передаёт ключ, симметрия шифрует данные; сеансовый ключ — на одно соединение</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Доверие — это цепочка</h4>
+            <p>сертификат → промежуточный → корень из ОС; браузер проверяет её сам, за миллисекунды</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Замок — про канал, не про сайт</h4>
+            <p>фишинг тоже с замком; адрес и репутацию проверяют глаза, не браузер</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">HTTPS = HTTP + TLS: <span class="highlight-1">в формуле теперь понятны оба слагаемых</span>.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="vendor/reveal/reveal.js"></script>
+  <script src="vendor/reveal/plugin/highlight/highlight.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      center: true,
+      transition: 'slide',
+      transitionSpeed: 'default',
+      backgroundTransition: 'slide',
+      width: 1920,
+      height: 1080,
+      margin: 0.08,
+      minScale: 0.2,
+      maxScale: 2.0,
+      controls: true,
+      progress: true,
+      slideNumber: 'h/v',
+      plugins: [RevealHighlight]
+    });
+  </script>
+</body>
+</html>
