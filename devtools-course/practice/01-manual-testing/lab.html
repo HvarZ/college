@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Лабораторная работа: полный цикл над фичей</title>
+<link rel="stylesheet" href="../../lessons/04-manual-testing/vendor/fonts/fonts.css">
+<style>
+  :root {
+    --ink: #1a1b26; --ink-soft: #3c4260; --muted: #6b7394;
+    --blue: #3b5cc4; --green: #3f8f46; --orange: #c25e2a; --violet: #6f4fc4;
+    --panel: #f5f6fb; --border: #dfe3f0;
+  }
+  @page { size: A4; margin: 15mm 14mm 17mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Golos Text', sans-serif; font-size: 10.2pt; line-height: 1.5; color: var(--ink); }
+  code, .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .masthead { border-bottom: 3px solid var(--ink); padding-bottom: 10px; margin-bottom: 14px; }
+  .masthead .course { font-family: 'JetBrains Mono', monospace; font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; color: var(--blue); font-weight: 500; margin-bottom: 6px; }
+  .masthead h1 { font-size: 18.5pt; font-weight: 800; letter-spacing: -.02em; }
+  .masthead .sub { color: var(--ink-soft); font-size: 10pt; margin-top: 4px; }
+
+  .part { display: flex; justify-content: space-between; align-items: baseline; margin: 15px 0 6px; padding-bottom: 4px; border-bottom: 2px solid var(--border); }
+  .part .name { font-size: 11.5pt; font-weight: 800; }
+  .part .name .idx { color: var(--blue); font-family: 'JetBrains Mono', monospace; margin-right: 6px; }
+  .part .t { font-family: 'JetBrains Mono', monospace; font-size: 8pt; color: var(--muted); }
+  .part.g .name .idx { color: var(--green); } .part.o .name .idx { color: var(--orange); } .part.v .name .idx { color: var(--violet); }
+
+  .spec { border: 2px solid var(--ink); border-radius: 10px; padding: 10px 14px; margin: 10px 0; page-break-inside: avoid; }
+  .spec .h { font-weight: 800; font-size: 10.5pt; margin-bottom: 5px; }
+  .spec ul { margin-left: 18px; }
+  .spec li { font-size: 9.3pt; color: var(--ink-soft); margin-bottom: 3px; }
+  .spec li b { color: var(--ink); }
+
+  .task { margin: 9px 0; padding: 8px 10px; background: var(--panel); border-radius: 8px; page-break-inside: avoid; }
+  .task .head b { font-size: 10.2pt; }
+  .task p, .task li { font-size: 9.5pt; color: var(--ink-soft); }
+  .task ol, .task ul { margin: 3px 0 2px 16px; }
+  .task li { margin-bottom: 2px; }
+  .task .todo { margin-top: 4px; }
+  .task .todo b { color: var(--ink); }
+  .task .file { font-family: 'JetBrains Mono', monospace; font-size: 8.5pt; color: var(--blue); }
+
+  table.report { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 9pt; page-break-inside: avoid; }
+  table.report th { text-align: left; font-size: 8pt; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 2px solid var(--ink); padding: 4px 6px; }
+  table.report td { border-bottom: 1px solid var(--border); padding: 5px 6px; color: var(--ink-soft); vertical-align: top; }
+  table.report td b { color: var(--ink); }
+
+  .expect { border: 2px solid var(--ink); border-radius: 10px; padding: 10px 14px; margin: 10px 0; page-break-inside: avoid; }
+  .expect .h { font-weight: 800; font-size: 10.5pt; margin-bottom: 5px; }
+  .expect ol { margin-left: 18px; }
+  .expect li { font-size: 9.4pt; color: var(--ink-soft); margin-bottom: 3px; }
+  .expect li b { color: var(--ink); }
+
+  .submit { background: var(--ink); color: #dfe3f8; border-radius: 10px; padding: 10px 14px; margin-top: 12px; page-break-inside: avoid; }
+  .submit .h { font-weight: 800; color: #fff; margin-bottom: 4px; font-size: 10.2pt; }
+  .submit p { font-size: 9.3pt; margin-bottom: 2px; }
+  .submit b { color: #9ece6a; }
+  .pb { page-break-before: always; }
+</style>
+</head>
+<body>
+
+  <div class="masthead">
+    <div class="course">Инструментальные средства разработки ПО · лабораторная работа</div>
+    <h1>Полный цикл работы над фичей</h1>
+    <div class="sub">Транспорт и формат · ручное тестирование · отладка · дефекты и релиз — одна работа, весь курс</div>
+  </div>
+
+  <p style="font-size:9.7pt; color:var(--ink-soft);">
+    Вы — junior-инженер команды. Система «ИТ-снабжение» (заявка на оснащение рабочего места) собрана,
+    релиз — завтра. Работа проходит четыре этапа: вы разбираете обмены данных системы, тестируете её
+    вручную, расследуете сбой по материалам и оформляете итог в виде дефект-репортов и решения о релизе.
+    Всё выполняется самостоятельно; материалы — в папке <span class="mono">materials</span>,
+    сама система — <span class="mono">app/index.html</span> (открывается двойным кликом, интернет не нужен).
+  </p>
+
+  <div class="expect">
+    <div class="h">Что я хочу видеть в работе</div>
+    <ol>
+      <li><b>Ответ с доказательством.</b> На каждый вопрос — ответ и строка-цитата из материала (или шаги в приложении).</li>
+      <li><b>Цепочка рассуждения.</b> Не «сломалась база», а: заголовок говорит X → строка Y → значит причина Z.</li>
+      <li><b>План раньше действий.</b> В части 2 чек-лист составляется до тестирования.</li>
+      <li><b>Ссылка на эталон.</b> «Ожидание» в репортах опирается на пункт требований.</li>
+      <li><b>Обоснованные решения.</b> Severity, триаж и вердикт по релизу — с аргументами, а не «на глаз».</li>
+    </ol>
+  </div>
+
+  <!-- ЧАСТЬ 1 -->
+  <div class="part"><div class="name"><span class="idx">01</span>Транспорт и формат данных</div><div class="t">25 мин</div></div>
+
+  <div class="task">
+    <div class="head"><b>1.1 · Чтение HTTP-обменов</b> — <span class="file">materials/http-dump.txt</span></div>
+    <p>Три записанных обмена системы с сервером (строки запроса отмечены «&gt;», ответа — «&lt;»). Ответьте:</p>
+    <ol>
+      <li>Обмен A: почему запросов два, а не один? Какую роль сыграл заголовок <b>Location</b>? Какой итоговый код ответа увидит браузер?</li>
+      <li>Обмен A: что сервер сделал с заголовком <b>Set-Cookie</b> и зачем система будет отправлять его обратно?</li>
+      <li>Обмен B: почему созданный заказ вернул код <b>201</b>, а не 200? Что лежало в теле запроса и что — в теле ответа?</li>
+      <li>Обмен C: в чём разница между кодами <b>404</b> и <b>500</b> — кто виноват в каждом случае и стоит ли повторять запрос?</li>
+    </ol>
+  </div>
+
+  <div class="task">
+    <div class="head"><b>1.2 · Сломанный JSON</b> — <span class="file">materials/order-broken.json</span></div>
+    <p>Заявка в JSON содержит <b>три синтаксические ошибки</b> — документ не разбирается парсером.</p>
+    <ol>
+      <li>Найдите и выпишите все три ошибки (с номерами строк).</li>
+      <li>Запишите исправленный документ целиком.</li>
+      <li>Какой заголовок должен сопровождать этот документ при отправке по HTTP?</li>
+    </ol>
+  </div>
+
+  <div class="task">
+    <div class="head"><b>1.3 · JSON против XML</b> — <span class="file">materials/order.xml</span></div>
+    <p>Та же заявка, записанная в XML.</p>
+    <ol>
+      <li>Посчитайте размер обеих версий в символах и запишите оба числа.</li>
+      <li>Какие два свойства XML делают его больше JSON на тех же данных?</li>
+      <li>Что XML умеет, а JSON — нет (одна вещь достаточно)?</li>
+    </ol>
+  </div>
+
+  <!-- ЧАСТЬ 2 -->
+  <div class="part g pb"><div class="name"><span class="idx">02</span>Ручное тестирование системы</div><div class="t">25 мин</div></div>
+
+  <div class="spec">
+    <div class="h">Требования к системе (эталон для проверки)</div>
+    <ul>
+      <li><b>Каталог и заявка.</b> Количество каждой позиции — целое <b>от 0 и выше</b>; кнопка «−» не должна уводить количество в минус.</li>
+      <li><b>Сумма.</b> Итог пересчитывается при <b>любом</b> изменении заявки: добавление, уменьшение, удаление, очистка.</li>
+      <li><b>Промокод IT10</b> — скидка <b>10% на заказ, применяется один раз</b>. Сумма в сообщении об успехе совпадает с суммой на экране.</li>
+      <li><b>Доставка</b> — 200 ₽; при сумме оборудования <b>от 5000 ₽ — бесплатно</b>.</li>
+      <li><b>Форма:</b> ФИО — не пустое; email — корректный формат <b>обязательно</b>; телефон — только цифры, 11 символов; дата выхода — не раньше следующего дня.</li>
+      <li><b>Заявку можно подать только с непустым списком.</b> После отправки: сообщение, заявка очищена, форма готова к новой.</li>
+      <li>Тексты интерфейса — без опечаток.</li>
+    </ul>
+  </div>
+
+  <div class="task">
+    <div class="head"><b>2.1 · Чек-лист, затем прогон</b></div>
+    <p>Составьте чек-лист <b>минимум 12 пунктов</b> (области: количество, суммы, промокод, доставка, поля формы, отправка, тексты), затем выполните прогон: каждому пункту статус <b>passed / failed / blocked</b>.</p>
+    <p>Дефектов в системе запас — <b>не меньше десяти</b>. Приёмы: границы (ровно 5000, 0, −1), пустые поля, неверный тип данных, повторные действия, сверка «экран ↔ сообщение об успехе».</p>
+    <p class="todo"><b>Результат:</b> чек-лист со статусами. Для себя отмечайте шаги — они понадобятся в части 4.</p>
+  </div>
+
+  <!-- ЧАСТЬ 3 -->
+  <div class="part o"><div class="name"><span class="idx">03</span>Отладка по материалам</div><div class="t">15 мин</div></div>
+
+  <div class="task">
+    <div class="head"><b>3.1 · След исключения</b> — <span class="file">materials/trace.txt</span></div>
+    <ol>
+      <li>Что за исключение и что именно оказалось null (текст следа отвечает буквально)?</li>
+      <li>Какая строка следа — «своя» для команды системы, и почему остальные — «чужие»?</li>
+      <li>Опишите первопричину своими словами: что разработчик не учёл?</li>
+      <li>Предложите исправление: где в коде должна быть проверка и что она делает?</li>
+    </ol>
+  </div>
+
+  <div class="task">
+    <div class="head"><b>3.2 · Утренний сбой</b> — <span class="file">materials/incident.log</span></div>
+    <ol>
+      <li>Выпишите таймлайн каскада: не меньше четырёх событий с временем.</li>
+      <li>Какой момент — первый аномальный, и почему начало не там, где ERROR?</li>
+      <li>Что произошло после перезапуска в 08:52 и что это говорит о первопричине?</li>
+      <li>Сформулируйте первопричину и предложите, что исправить (одно действие — минимум).</li>
+    </ol>
+  </div>
+
+  <!-- ЧАСТЬ 4 -->
+  <div class="part v pb"><div class="name"><span class="idx">04</span>Дефекты, триаж, релиз</div><div class="t">25 мин</div></div>
+
+  <div class="task">
+    <div class="head"><b>4.1 · Дефект-репорты — минимум 4</b></div>
+    <table class="report">
+      <tr><th style="width:24%;">Поле</th><th>Что писать</th></tr>
+      <tr><td><b>Заголовок</b></td><td>краткий и точный: «Кнопка "−" уводит количество в минус»</td></tr>
+      <tr><td><b>Шаги</b></td><td>нумерованный список — воспроизводится с нуля любым человеком</td></tr>
+      <tr><td><b>Ожидание</b></td><td>по пункту требований — цитата или точный пересказ</td></tr>
+      <tr><td><b>Факт</b></td><td>что произошло — наблюдение, без оценок</td></tr>
+      <tr><td><b>Severity</b></td><td>critical / major / minor / trivial + обоснование одной строкой</td></tr>
+    </table>
+    <p>Шкала: critical — пользоваться нельзя; major — важная функция неверна; minor — обход есть; trivial — косметика.</p>
+  </div>
+
+  <div class="task">
+    <div class="head"><b>4.2 · Триаж</b></div>
+    <p>Разработчик успевает исправить только <b>три</b> дефекта до релиза. Какие три — и почему; какие два можно отложить — и почему допустимо.</p>
+  </div>
+
+  <div class="task">
+    <div class="head"><b>4.3 · Решение о релизе</b></div>
+    <p>Сведите итоги: pass rate прогона (passed из проверенных), открытые дефекты по severity,
+    вердикт <b>выпускаем / не выпускаем</b> и обоснование в 2–3 предложения.</p>
+    <p class="todo"><b>Ориентир из практики:</b> при открытых critical или провале ключевых сценариев релиз не идёт.</p>
+  </div>
+
+  <div class="submit">
+    <div class="h">Формат сдачи</div>
+    <p>Один файл <b>otchet.txt</b>: ответы частей 1 и 3 (вопрос → ответ → цитата-доказательство),
+    чек-лист части 2, репорты, триаж и решение части 4.</p>
+    <p>Работа рассчитана на пару; не успели — доработайте к следующему занятию.</p>
+  </div>
+
+</body>
+</html>

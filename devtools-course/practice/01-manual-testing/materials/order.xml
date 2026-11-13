@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<order>
+  <employee>Иванов И. И.</employee>
+  <email>ivanov@example.ru</email>
+  <items>
+    <item sku="KBD-01" qty="2" price="2000"/>
+    <item sku="MOUSE-7" qty="1" price="1000"/>
+    <item sku="CABLE-2M" qty="1" price="500"/>
+  </items>
+  <delivery>2026-11-20</delivery>
+  <urgent>false</urgent>
+</order>

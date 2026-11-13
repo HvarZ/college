@@ -1,0 +1,11 @@
+{
+  'employee': 'Иванов И. И.',
+  'email': 'ivanov@example.ru',
+  'items': [
+    { 'sku': 'KBD-01', 'qty': 2, 'price': 2000 },
+    { 'sku': 'MOUSE-7', 'qty': 1, 'price': 1000, },
+    { 'sku': 'CABLE-2M', 'qty': 1, 'price': 500 }
+  ],
+  'delivery': '2026-11-20',
+  'urgent': false
+}

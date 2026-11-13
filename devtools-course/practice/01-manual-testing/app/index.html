@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ИТ-снабжение — заявка на оснащение рабочего места</title>
+<style>
+  :root {
+    --ink: #23262f; --muted: #7a8096; --line: #dde0ea;
+    --accent: #3f5bc0; --accent-ink: #fff; --warn: #d64d42;
+    --panel: #f5f6fa; --ok: #35793c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--ink); background: #fff; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 60px; }
+  header { display: flex; justify-content: space-between; align-items: baseline;
+           border-bottom: 3px solid var(--ink); padding-bottom: 10px; margin-bottom: 20px; }
+  header h1 { font-size: 21px; }
+  header .count { color: var(--muted); font-size: 14px; }
+  .cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+  .card h2 { font-size: 13px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .prod { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .prod:last-child { border-bottom: none; }
+  .prod .name { font-size: 15px; }
+  .prod .price { color: var(--muted); font-size: 14px; margin-right: 10px; }
+  .btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+         border-radius: 7px; padding: 5px 12px; font-size: 14px; cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn.small { padding: 2px 10px; font-size: 14px; }
+  .qty { display: inline-block; min-width: 26px; text-align: center; font-variant-numeric: tabular-nums; }
+  .cart-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 15px; }
+  .totals { margin-top: 10px; font-size: 15px; }
+  .totals .line { display: flex; justify-content: space-between; padding: 3px 0; color: #4c5168; }
+  .totals .line.total { font-weight: 700; color: var(--ink); border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; font-size: 17px; }
+  .promo-line { color: var(--ok); }
+  .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+  form label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 3px; }
+  form input { width: 100%; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font-size: 15px; }
+  form input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .promo-row { display: flex; gap: 8px; margin-top: 12px; }
+  .promo-row input { text-transform: uppercase; }
+  .actions { margin-top: 16px; display: flex; gap: 10px; }
+  .msg { margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 15px; display: none; }
+  .msg.ok { display: block; background: #e9f2ea; color: #2c5e33; }
+  .msg.err { display: block; background: #fbeae9; color: var(--warn); }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ИТ-снабжение · Заявка на оснащение рабочего места</h1>
+    <div class="count">Позиций: <span id="head-count">0</span> шт.</div>
+  </header>
+
+  <div class="cols">
+    <div>
+      <div class="card">
+        <h2>Каталог оборудования</h2>
+        <div id="catalog"></div>
+      </div>
+
+      <div class="card">
+        <h2>Заявка</h2>
+        <div id="cart"></div>
+        <div class="totals" id="totals"></div>
+        <div class="actions">
+          <button class="btn ghost" id="btn-clear" type="button">Очистить заявку</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Скидка по договору</h2>
+        <div class="promo-row">
+          <input id="promo" type="text" placeholder="IT10">
+          <button class="btn" id="btn-promo" type="button">Применить</button>
+        </div>
+        <div class="hint" id="promo-hint">Промокод IT10 — скидка 10% по договору поставки</div>
+      </div>
+
+      <div class="card">
+        <h2>Данные заявки</h2>
+        <form id="order" novalidate>
+          <label for="f-name">ФИО сотрудника *</label>
+          <input id="f-name" type="text" autocomplete="off">
+          <label for="f-email">Email для уведомлений *</label>
+          <input id="f-email" type="text" autocomplete="off">
+          <label for="f-phone">Контактный телефон *</label>
+          <input id="f-phone" type="text" placeholder="+7 900 000-00-00" autocomplete="off">
+          <label for="f-date">Дата выхода сотрудника *</label>
+          <input id="f-date" type="date">
+          <div class="actions">
+            <button class="btn" id="btn-submit" type="submit">Подать заявку</button>
+          </div>
+        </form>
+        <div class="msg" id="msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var PRODUCTS = [
+    { id: 'monitor',  name: 'Монитор 24" 1920×1080',        price: 12400 },
+    { id: 'keyboard', name: 'Клавиатура механическая',      price: 2000 },
+    { id: 'mouse',    name: 'Мышь беспроводная',            price: 1000 },
+    { id: 'cable',    name: 'Кабель HDMI 2 м',              price: 500 },
+    { id: 'hub',      name: 'USB-хаб 7 портов',             price: 1500 }
+  ];
+
+  var cart = {};              // id -> количество
+  var promoApplied = false;   // промокод IT10
+  var lastDisplayedTotal = 0; // итог, показанный на экране
+  var DELIVERY = 200;
+  var FREE_FROM = 5000;
+
+  function byId(id) { return PRODUCTS.find(function (p) { return p.id === id; }); }
+
+  function calcSubtotal() {
+    var sum = 0;
+    for (var id in cart) { sum += byId(id).price * cart[id]; }
+    return sum;
+  }
+
+  // ---------- отрисовка ----------
+
+  function renderCatalog() {
+    var el = document.getElementById('catalog');
+    el.innerHTML = '';
+    PRODUCTS.forEach(function (p) {
+      var row = document.createElement('div');
+      row.className = 'prod';
+      row.innerHTML =
+        '<span class="name">' + p.name + '</span>' +
+        '<span>' +
+          '<span class="price">' + p.price.toLocaleString('ru-RU') + ' ₽</span>' +
+          '<button class="btn small ghost" data-minus="' + p.id + '">−</button>' +
+          '<span class="qty" id="q-' + p.id + '">' + (cart[p.id] || 0) + '</span>' +
+          '<button class="btn small" data-plus="' + p.id + '">+</button>' +
+        '</span>';
+      el.appendChild(row);
+    });
+  }
+
+  function renderItems() {
+    renderCatalog();
+    var cartEl = document.getElementById('cart');
+    cartEl.innerHTML = '';
+    var ids = Object.keys(cart).filter(function (id) { return cart[id] !== 0; });
+    if (ids.length === 0) {
+      cartEl.innerHTML = '<div class="empty">Заявка пуста</div>';
+    } else {
+      ids.forEach(function (id) {
+        var p = byId(id);
+        var row = document.createElement('div');
+        row.className = 'cart-row';
+        row.innerHTML =
+          '<span>' + p.name + ' × ' + cart[id] + '</span>' +
+          '<span>' +
+            '<span>' + (p.price * cart[id]).toLocaleString('ru-RU') + ' ₽&nbsp;&nbsp;</span>' +
+            '<button class="btn small ghost" data-remove="' + id + '">удалить</button>' +
+          '</span>';
+        cartEl.appendChild(row);
+      });
+    }
+    var count = 0;
+    for (var id in cart) { count += cart[id]; }
+    document.getElementById('head-count').textContent = count;
+  }
+
+  function renderTotals() {
+    var el = document.getElementById('totals');
+    var sub = calcSubtotal();
+    if (sub === 0 && !promoApplied) {
+      el.innerHTML = '';
+      lastDisplayedTotal = 0;
+      return;
+    }
+    var withDiscount = promoApplied ? sub * 0.9 : sub;
+    var delivery = sub > FREE_FROM ? 0 : DELIVERY;
+    var total = withDiscount + delivery;
+    lastDisplayedTotal = total;
+    var html = '';
+    html += '<div class="line"><span>Оборудование</span><span>' + sub.toLocaleString('ru-RU') + ' ₽</span></div>';
+    if (promoApplied) {
+      html += '<div class="line promo-line"><span>Промокод IT10 (−10%)</span><span>−' + (sub - withDiscount).toFixed(2) + ' ₽</span></div>';
+    }
+    html += '<div class="line"><span>Доставка</span><span>' +
+            (delivery === 0 ? 'бесплатно' : delivery.toLocaleString('ru-RU') + ' ₽') + '</span></div>';
+    html += '<div class="line total"><span>Итого</span><span>' + total.toFixed(2) + ' ₽</span></div>';
+    el.innerHTML = html;
+  }
+
+  // ---------- действия ----------
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t.dataset.plus) {
+      var id1 = t.dataset.plus;
+      cart[id1] = (cart[id1] || 0) + 1;
+      renderItems();
+      renderTotals();
+    }
+    if (t.dataset.minus) {
+      var id2 = t.dataset.minus;
+      cart[id2] = (cart[id2] || 0) - 1;
+      renderItems();
+    }
+    if (t.dataset.remove) {
+      delete cart[t.dataset.remove];
+      renderItems();
+      renderTotals();
+    }
+  });
+
+  document.getElementById('btn-clear').addEventListener('click', function () {
+    cart = {};
+    renderItems();
+    renderTotals();
+  });
+
+  document.getElementById('btn-promo').addEventListener('click', function () {
+    var code = document.getElementById('promo').value.trim().toUpperCase();
+    var hint = document.getElementById('promo-hint');
+    if (code === 'IT10') {
+      promoApplied = true;
+      hint.textContent = 'Промокод применён: скидка 10% по договору';
+      renderTotals();
+    } else {
+      hint.textContent = 'Такого промокода нет';
+    }
+  });
+
+  // ---------- отправка заявки ----------
+
+  function showMsg(text, ok) {
+    var m = document.getElementById('msg');
+    m.textContent = text;
+    m.className = 'msg ' + (ok ? 'ok' : 'err');
+  }
+
+  document.getElementById('order').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var name  = document.getElementById('f-name').value.trim();
+    var email = document.getElementById('f-email').value.trim();
+    var phone = document.getElementById('f-phone').value.trim();
+    var date  = document.getElementById('f-date').value;
+
+    if (name === '') { showMsg('Укажите ФИО сотрудника', false); return; }
+
+    var emailRe = /.+@.+\..+/;
+    if (email !== '' && !emailRe.test(email)) { showMsg('Email выглядит некорректно', false); return; }
+
+    var final = lastDisplayedTotal;
+    if (promoApplied) { final = final * 0.9; }
+
+    var num = 1000 + Math.floor(Math.random() * 9000);
+    showMsg('Заявка офромлена! № SR-' + num + '. К оплате: ' + final.toFixed(2) + ' ₽', true);
+    document.getElementById('btn-submit').disabled = true;
+  });
+</script>
+</body>
+</html>

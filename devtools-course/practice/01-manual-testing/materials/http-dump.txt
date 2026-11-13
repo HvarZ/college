@@ -1,0 +1,46 @@
+=== МАТЕРИАЛ 1: ЗАПИСИ HTTP-ОБМЕНОВ (задание 1.1) ==========
+=== сняты curl -v, адреса заменены на учебные ===================
+
+--- Обмен A ----------------------------------------------------
+> GET /old/catalog HTTP/1.1
+> Host: supply.example.ru
+> Accept: text/html
+
+< HTTP/1.1 301 Moved Permanently
+< Location: /catalog
+< Content-Length: 0
+
+> GET /catalog HTTP/1.1
+> Host: supply.example.ru
+> Accept: text/html
+
+< HTTP/1.1 200 OK
+< Content-Type: text/html; charset=utf-8
+< Content-Length: 5120
+< Set-Cookie: session=9f8e7d6c; Path=/
+
+--- Обмен B ----------------------------------------------------
+> POST /api/orders HTTP/1.1
+> Host: supply.example.ru
+> Content-Type: application/json
+> Content-Length: 96
+>
+> {"employee": "Иванов И. И.", "items": [{"sku": "KBD-01", "qty": 2}]}
+
+< HTTP/1.1 201 Created
+< Content-Type: application/json
+< Location: /api/orders/SR-4021
+< Content-Length: 143
+<
+< {"id": "SR-4021", "status": "created", "total": 4000}
+
+--- Обмен C ----------------------------------------------------
+> GET /api/orders/SR-9999 HTTP/1.1
+> Host: supply.example.ru
+> Accept: application/json
+
+< HTTP/1.1 404 Not Found
+< Content-Type: application/json
+< Content-Length: 27
+<
+< {"error": "order not found"}

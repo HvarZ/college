@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Итоговый тест — Инструментальные средства разработки ПО</title>
+<link rel="stylesheet" href="../../lessons/04-manual-testing/vendor/fonts/fonts.css">
+<style>
+  :root {
+    --ink: #1a1b26; --ink-soft: #1a1b26; --muted: #1a1b26;
+    --blue: #1a1b26; --green: #1a1b26; --orange: #1a1b26; --violet: #1a1b26;
+    --panel: #f5f6fb; --border: #dfe3f0;
+  }
+  @page { size: A4; margin: 11mm 12mm 11mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Golos Text', sans-serif; font-size: 11pt; line-height: 1.42; color: var(--ink); }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .masthead { border-bottom: 3px solid var(--ink); padding-bottom: 7px; margin-bottom: 8px; }
+  .masthead .course { font-family: 'JetBrains Mono', monospace; font-size: 7.5pt; letter-spacing: .12em; text-transform: uppercase; color: var(--blue); font-weight: 500; margin-bottom: 3px; }
+  .masthead h1 { font-size: 15.5pt; font-weight: 800; letter-spacing: -.02em; }
+
+  .fields { display: flex; gap: 14px; margin: 8px 0 7px; }
+  .field { flex: 1; display: flex; align-items: flex-end; gap: 5px; font-size: 10pt; }
+  .field .line { flex: 1; border-bottom: 1.5px solid var(--ink); min-height: 16px; }
+
+  .rules { background: var(--panel); border-radius: 7px; padding: 6px 10px; margin-bottom: 8px; font-size: 8.7pt; color: var(--ink-soft); }
+  .rules b { color: var(--ink); }
+
+  .part { display: flex; justify-content: space-between; align-items: baseline; margin: 9px 0 4px; padding-bottom: 2px; border-bottom: 2px solid var(--border); }
+  .part .name { font-size: 10pt; font-weight: 800; }
+  .part .name .idx { color: var(--blue); font-family: 'JetBrains Mono', monospace; margin-right: 5px; }
+  .part.g .name .idx { color: var(--green); } .part.o .name .idx { color: var(--orange); } .part.v .name .idx { color: var(--violet); }
+
+  .q { margin: 6px 0; page-break-inside: avoid; }
+  .q .text { font-size: 11pt; font-weight: 600; }
+  .q .text .n { color: var(--muted); font-weight: 800; margin-right: 3px; }
+  .opts { margin-top: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .opt { font-size: 10.5pt; color: var(--ink-soft); }
+  .opt b { color: var(--ink); font-family: 'JetBrains Mono', monospace; }
+  .lines { margin-top: 5px; }
+  .lines .l { border-bottom: 1px solid #1a1b26; height: 22px; }
+  .score-box { margin-top: 10px; display: flex; justify-content: flex-end; align-items: center; border-top: 2px solid var(--ink); padding-top: 6px; }
+  .score-box .box { font-family: 'JetBrains Mono', monospace; font-size: 10pt; color: var(--ink); border: 1.5px solid var(--ink); border-radius: 6px; padding: 1px 12px; }
+</style>
+</head>
+<body>
+
+  <div class="masthead">
+    <div class="course">Инструментальные средства разработки ПО · итоговый тест</div>
+    <h1>Тест по курсу</h1>
+  </div>
+
+  <div class="fields">
+    <div class="field" style="flex:2;">Фамилия И. <span class="line"></span></div>
+    <div class="field">Группа <span class="line"></span></div>
+    <div class="field">Дата <span class="line"></span></div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">1.</span>Из-за сбоя сети запрос на создание заказа мог отправиться дважды. Какой метод не создаст дубль заказа при повторе?</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> POST</div>
+      <div class="opt"><b>2)</b> PUT</div>
+      <div class="opt"><b>3)</b> GET</div>
+      <div class="opt"><b>4)</b> OPTIONS</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">2.</span>Для чего вместо прямого HTTP-вызова используют брокер сообщений?</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> получатель может быть временно недоступен</div>
+      <div class="opt"><b>2)</b> пиковая нагрузка сглаживается очередью</div>
+      <div class="opt"><b>3)</b> сообщения автоматически шифруются</div>
+      <div class="opt"><b>4)</b> ответ возвращается быстрее</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">3.</span>Что умеет WebSocket, чего не может обычный HTTP?</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> сервер сам отправляет данные клиенту</div>
+      <div class="opt"><b>2)</b> шифрует весь трафик</div>
+      <div class="opt"><b>3)</b> ускоряет разрешение имён</div>
+      <div class="opt"><b>4)</b> сжимает ответы автоматически</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">4.</span>Между внутренними сервисами проходит большой поток сообщений, важен размер. Какой формат выбрать?</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> JSON</div>
+      <div class="opt"><b>2)</b> XML</div>
+      <div class="opt"><b>3)</b> CSV</div>
+      <div class="opt"><b>4)</b> Protobuf</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">5.</span>Сервер вернул код 404 на запрос карточки товара. Кто вероятнее ошибся — клиент или сервер — и что проверять первым?</div>
+    <div class="lines"><div class="l"></div><div class="l"></div></div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">6.</span>Сервер вернул код 502 на запрос оплаты. Ваши действия: повторить запрос сразу или позже — и почему?</div>
+    <div class="lines"><div class="l"></div><div class="l"></div></div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">7.</span>Зачем обмену данными нужна схема сообщения (JSON Schema, XSD)?</div>
+    <div class="lines"><div class="l"></div><div class="l"></div></div>
+  </div>
+
+  <!-- ТЕМА 2 -->
+  <div class="q">
+    <div class="text"><span class="n">8.</span>Что находится в основании пирамиды тестов?</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> UI-тесты</div>
+      <div class="opt"><b>2)</b> интеграционные тесты</div>
+      <div class="opt"><b>3)</b> unit-тесты</div>
+      <div class="opt"><b>4)</b> ручные проверки</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">9.</span>Какой уровень пирамиды — самый медленный и дорогой в поддержке?</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> unit-тесты</div>
+      <div class="opt"><b>2)</b> интеграционные тесты</div>
+      <div class="opt"><b>3)</b> UI-тесты всей системы</div>
+      <div class="opt"><b>4)</b> стоимости одинаковы</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">10.</span>Что из перечисленного относится к заглушкам (test double)?</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> mock</div>
+      <div class="opt"><b>2)</b> stub</div>
+      <div class="opt"><b>3)</b> assert</div>
+      <div class="opt"><b>4)</b> fake</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">11.</span>Проверки кода без его запуска (ревью, линтеры, компилятор) объединяются названием:</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> динамический анализ</div>
+      <div class="opt"><b>2)</b> статический анализ</div>
+      <div class="opt"><b>3)</b> фаззинг</div>
+      <div class="opt"><b>4)</b> профилирование</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">12.</span>«Тестирование показывает наличие дефектов, а не их отсутствие». Объясните смысл этой фразы своими словами.</div>
+    <div class="lines"><div class="l"></div><div class="l"></div></div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">13.</span>Тест «иногда падает сам по себе», перезапуск помогает. Чем это опасно для команды?</div>
+    <div class="lines"><div class="l"></div><div class="l"></div></div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">14.</span>Почему unit-тестов советуют писать намного больше, чем UI-тестов?</div>
+    <div class="lines"><div class="l"></div><div class="l"></div></div>
+  </div>
+
+  <!-- ТЕМА 3 -->
+  <div class="q">
+    <div class="text"><span class="n">15.</span>Какой шаг отладчика выполняет строку целиком, не заходя внутрь вызываемых методов?</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> Step Into</div>
+      <div class="opt"><b>2)</b> Step Over</div>
+      <div class="opt"><b>3)</b> Step Out</div>
+      <div class="opt"><b>4)</b> Run to Cursor</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">16.</span>В stack trace 20 строк, верхние — из библиотечного кода. С какой строки вы начнёте поиск причины и почему?</div>
+    <div class="lines"><div class="l"></div><div class="l"></div></div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">17.</span>Какой уровень логирования находится между INFO и ERROR?</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> TRACE</div>
+      <div class="opt"><b>2)</b> DEBUG</div>
+      <div class="opt"><b>3)</b> WARN</div>
+      <div class="opt"><b>4)</b> FATAL</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">18.</span>Чем отладчик сильнее временных печатей в коде (когда разработчик добавляет вывод значений и перезапускает программу)?</div>
+    <div class="lines"><div class="l"></div><div class="l"></div></div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">19.</span>Что умеет отладчик?</div>
+    <div class="opts">
+      <div class="opt"><b>1)</b> останавливаться по условию</div>
+      <div class="opt"><b>2)</b> изменять переменную в остановке</div>
+      <div class="opt"><b>3)</b> исправлять ошибки в готовом коде</div>
+      <div class="opt"><b>4)</b> вычислять выражение в контексте остановки</div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="text"><span class="n">20.</span>В журнале приложения перед первым ERROR записано несколько предупреждений WARN. Почему разбор сбоя начинают с первого WARN, а не с самой ошибки?</div>
+    <div class="lines"><div class="l"></div><div class="l"></div></div>
+  </div>
+
+  <div class="score-box">
+    <span class="box">____ / 20</span>
+  </div>
+
+</body>
+</html>

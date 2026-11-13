@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ручное тестирование в команде — Инструментальные средства разработки ПО</title>
+
+  <!-- Reveal.js (вендорено, работает офлайн) -->
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="vendor/reveal/plugin/highlight/monokai.css">
+
+  <!-- Тема курса -->
+  <link rel="stylesheet" href="theme/course-dark.css">
+
+  <!-- Правки темы для этой деки: единое выравнивание таблиц -->
+  <style>
+    .reveal .hdr-grid .hcell,
+    .reveal .hdr-grid .hcell b,
+    .reveal .hdr-grid .hcell .bits { text-align: left; }
+  </style>
+
+  <!-- Шрифты локально (кириллица + латиница, офлайн) -->
+  <link rel="stylesheet" href="vendor/fonts/fonts.css">
+</head>
+<body>
+
+  <div class="slide-footer">Инструментальные средства разработки ПО</div>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- 1 · ТИТУЛ -->
+      <section class="centered">
+        <p class="label">Инструментальные средства разработки ПО</p>
+        <h1>Ручное тестирование<br><span class="text-accent-2">в команде</span></h1>
+        <div class="bar"></div>
+        <p class="lead">Как это устроено в больших компаниях: документы, прогоны, дефекты, релиз</p>
+      </section>
+
+      <!-- 2 · ЧАСТЬ РАБОТЫ КОМАНДЫ -->
+      <section>
+        <p class="label">Процесс</p>
+        <h2>Тестирование — часть работы команды</h2>
+        <div class="bar"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">анализ требований</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">разработка</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">тестирование</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">релиз</span>
+        </div>
+
+        <ul>
+          <li>Тестировщик подключается <b>с самого начала</b>: спорные места в требованиях находят до написания кода</li>
+          <li>Тестируют <b>параллельно разработке</b>, а не после неё — к релизу всё уже проверено</li>
+          <li>Релиз не выходит, пока <span class="highlight-1">не выполнены условия качества</span> — это правило, а не желание</li>
+        </ul>
+      </section>
+
+      <!-- 3 · ПЛАН И КРИТЕРИИ -->
+      <section>
+        <p class="label">Документы</p>
+        <h2>Тест-план: договориться заранее</h2>
+        <div class="bar bar-accent-5"></div>
+
+        <div class="hdr-grid" style="margin-top: var(--space-md);">
+          <div class="hcell"><b>Что тестируем</b></div>
+          <div class="hcell">объём: модули, сценарии, что важно в этом релизе</div>
+          <div class="hcell"><b>Где тестируем</b></div>
+          <div class="hcell">окружения и тестовые данные</div>
+          <div class="hcell"><b>Когда начинаем</b></div>
+          <div class="hcell">критерий входа: сборка установлена, утренний smoke пройден</div>
+          <div class="hcell"><b>Когда заканчиваем</b></div>
+          <div class="hcell">критерий выхода: прогоны зелёные, критичных дефектов ноль</div>
+        </div>
+
+        <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">План записан — значит, «а мы думали, вы это проверяли» не случится</p>
+      </section>
+
+      <!-- 4 · КЕЙСЫ И ПРОГОНЫ  (+ deep: ISTQB) -->
+      <section>
+        <section>
+          <p class="label">Документы</p>
+          <h2>Тест-кейс, набор, прогон</h2>
+          <div class="bar"></div>
+
+          <div class="flow-lane" style="margin: var(--space-md) 0;">
+            <span class="flow-pill">тест-кейс</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">набор по модулю</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">прогон на релиз</span>
+          </div>
+
+          <ul>
+            <li>Кейс: цель, предусловия, шаги, <b>ожидаемый результат</b> — со ссылкой на требование</li>
+            <li>В прогоне у кейса статус: <span class="highlight-2">passed</span> · <span class="highlight-3">failed</span> · blocked · skipped</li>
+            <li>Всё живёт в системах управления тестами: <b>TestRail, Zephyr, Xray</b> — рядом с задачами разработки</li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>ISTQB — общий язык индустрии</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Международная сертификация тестировщиков; её словарь понимают в любой стране и компании</li>
+            <li>Термины этого урока — severity, test run, критерии выхода — оттуда</li>
+            <li>Базовый уровень (Foundation) — частое требование в вакансиях QA</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 5 · ПРИЁМ 1: ЭКВИВАЛЕНТНОСТЬ -->
+      <section>
+        <p class="label">Тест-дизайн · приём 1</p>
+        <h2>Не проверяйте всё подряд</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <p style="margin-top: var(--space-sm);">Поле «возраст 18–60». Проверять все числа от 0 до 100 не нужно: программа отвечает на них <b>одинаково</b>. Значит, достаточно <b>одного представителя</b> из каждой группы.</p>
+
+        <div class="hdr-grid" style="margin-top: var(--space-md);">
+          <div class="hcell"><b>Группа значений</b></div>
+          <div class="hcell"><b>Что берём</b></div>
+          <div class="hcell flag">меньше нормы</div>
+          <div class="hcell">17 — и этого хватит за всю группу</div>
+          <div class="hcell flag">норма</div>
+          <div class="hcell">25</div>
+          <div class="hcell flag">больше нормы</div>
+          <div class="hcell">61</div>
+          <div class="hcell flag">вообще не число</div>
+          <div class="hcell">«abc» и пустое поле</div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Четыре проверки вместо ста — <span class="highlight-2">уверенность та же</span>.</p>
+      </section>
+
+      <!-- 6 · ПРИЁМ 2: ГРАНИЦЫ -->
+      <section>
+        <p class="label">Тест-дизайн · приём 2</p>
+        <h2>Ошибки прячутся на краях</h2>
+        <div class="bar bar-accent-2"></div>
+
+        <p style="margin-top: var(--space-sm);">Середина диапазона почти всегда работает. Всё интересное — <b>на границах</b>: условие в коде легко написать как «больше 1500» вместо «1500 и больше» — <span class="highlight-3">один символ, а деньги считаются по-разному</span>.</p>
+
+        <div class="chip-row" style="margin-top: var(--space-md);">
+          <span class="chip">возраст 18–60 → проверяем <b>17, 18</b> и <b>60, 61</b></span>
+          <span class="chip">скидка от 1500 → <b>1499, 1500, 1501</b></span>
+          <span class="chip">список → <b>первый, последний, +1 за последним</b></span>
+        </div>
+
+        <ul style="margin-top: var(--space-md);">
+          <li>Правило: <b>значение на границе и шаг за неё</b> — всегда пара</li>
+          <li>Вырожденные значения — тоже граница: <span class="highlight-5">0, пусто, −1</span></li>
+        </ul>
+      </section>
+
+      <!-- 7 · ПРИЁМ 3: ТАБЛИЦА РЕШЕНИЙ  (+ deep: pairwise) -->
+      <section>
+        <section>
+          <p class="label">Тест-дизайн · приём 3</p>
+          <h2>Когда условий несколько</h2>
+          <div class="bar bar-accent-2"></div>
+
+          <p style="margin-top: var(--space-sm);">Доставка зависит от двух условий: промокод и сумма заказа. Выписываем <b>все сочетания</b> — каждая строка таблицы готовый тест:</p>
+
+          <div class="hdr-grid" style="margin-top: var(--space-md);">
+            <div class="hcell"><b>Промокод</b></div>
+            <div class="hcell"><b>Сумма ≥ 1500</b></div>
+            <div class="hcell"><b>Ожидаем</b></div>
+            <div class="hcell flag">нет</div>
+            <div class="hcell">нет</div>
+            <div class="hcell">доставка 200 ₽</div>
+            <div class="hcell flag">нет</div>
+            <div class="hcell">да</div>
+            <div class="hcell">доставка бесплатно</div>
+            <div class="hcell flag">да</div>
+            <div class="hcell">да</div>
+            <div class="hcell">бесплатно + скидка</div>
+          </div>
+
+          <p class="text-muted" style="margin-top: var(--space-md); font-size: var(--size-body);">Пропущенная строка — ситуация, которую никто не проверил до продакшена</p>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Если параметров много: pairwise</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>5 параметров по 4 значения = <b>1024 комбинации</b> — руками не перебрать</li>
+            <li>Опыт индустрии: почти все дефекты — от сочетания <b>не больше двух</b> параметров</li>
+            <li>Попарный подбор покрывает все пары значений: <span class="highlight-2">1024 → ~16 тестов</span>; инструменты вроде PICT собирают наборы автоматически</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 8 · ДЕФЕКТ: ЦИКЛ И ПРИОРИТЕТЫ -->
+      <section>
+        <p class="label">Дефекты</p>
+        <h2>Дефект: путь от находки до закрытия</h2>
+        <div class="bar bar-accent-3"></div>
+
+        <div class="flow-lane" style="margin: var(--space-md) 0;">
+          <span class="flow-pill">репорт</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">триаж</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">чинят</span><span class="flow-arrow">→</span>
+          <span class="flow-pill hot">перепроверили</span><span class="flow-arrow">→</span>
+          <span class="flow-pill">закрыт</span>
+        </div>
+
+        <ul>
+          <li>Репорт — по форме: заголовок, шаги, ожидание по требованию, факт. <b>Читается без автора</b></li>
+          <li><b>Триаж</b> — регулярный разбор новых дефектов: важность, срочность, дубликаты</li>
+          <li><b>Severity</b> (насколько больно: critical–trivial) ставит тестировщик; <b>priority</b> (что чинить первым) назначает триаж — оси независимы</li>
+          <li>«Перепроверили» — <span class="highlight-1">только сам тестировщик</span>, после своей проверки; не починилось — репорт возвращается</li>
+        </ul>
+      </section>
+
+      <!-- 9 · ОКРУЖЕНИЯ И РЕЛИЗ  (+ deep: smoke) -->
+      <section>
+        <section>
+          <p class="label">Релиз</p>
+          <h2>Где тестируют и когда отпускают</h2>
+          <div class="bar bar-accent-5"></div>
+
+          <div class="flow-lane" style="margin: var(--space-md) 0;">
+            <span class="flow-pill">dev</span><span class="flow-arrow">→</span>
+            <span class="flow-pill hot">test</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">stage — копия прода</span><span class="flow-arrow">→</span>
+            <span class="flow-pill">prod</span>
+          </div>
+
+          <ul>
+            <li>Ручное тестирование — на <b>выделенном окружении</b> с готовыми тестовыми данными; прод — не полигон</li>
+            <li>Решение «выпускаем / не выпускаем» принимается <b>по заранее записанным условиям</b>: прогоны зелёные, критичных дефектов ноль</li>
+            <li>Отчёт по результатам прикладывается к релизу: пройдено столько-то, провалено столько-то, открыто столько-то</li>
+          </ul>
+        </section>
+
+        <section class="deep" data-background-color="#16161e">
+          <p class="label">↓ Доп. факт</p>
+          <h2>Smoke каждое утро</h2>
+          <div class="deep-rule"></div>
+          <ul>
+            <li>Ночью собирается новая версия; утром — <b>15 минут, 10 ключевых проверок</b>: логины, оплата, главные страницы</li>
+            <li>Упал smoke — день останавливается: чинят сборку, потом всё остальное</li>
+            <li>Ночные повторы — уже автоматика; ручной труд остаётся <span class="highlight-4">новому и исследовательскому</span></li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- 10 · ИТОГ -->
+      <section>
+        <p class="label">Итоги</p>
+        <h2>Что делает тестирование «взрослым»</h2>
+        <div class="bar"></div>
+
+        <div class="grid-3" style="margin-top: var(--space-md);">
+          <div class="card">
+            <h4 class="text-accent-1">Всё записано</h4>
+            <p>план, кейсы и прогоны в общей системе — проверяемо и воспроизводимо</p>
+          </div>
+          <div class="card card-accent-2">
+            <h4 class="text-accent-2">Дефекты — процесс</h4>
+            <p>репорт по форме, триаж, перепроверка перед закрытием</p>
+          </div>
+          <div class="card card-accent-3">
+            <h4 class="text-accent-3">Релиз — по условиям</h4>
+            <p>выпускают по записанным критериям, а не по ощущениям</p>
+          </div>
+        </div>
+
+        <p class="impact" style="margin-top: var(--space-lg);">Процесс превращает «вроде работает» в <span class="highlight-2">доказанно работает</span>.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="vendor/reveal/reveal.js"></script>
+  <script src="vendor/reveal/plugin/highlight/highlight.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      center: true,
+      transition: 'slide',
+      transitionSpeed: 'default',
+      backgroundTransition: 'slide',
+      width: 1920,
+      height: 1080,
+      margin: 0.08,
+      minScale: 0.2,
+      maxScale: 2.0,
+      controls: true,
+      progress: true,
+      slideNumber: 'h/v',
+      plugins: [RevealHighlight]
+    });
+  </script>
+</body>
+</html>

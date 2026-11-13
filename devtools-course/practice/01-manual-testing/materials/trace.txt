@@ -1,0 +1,13 @@
+=== МАТЕРИАЛ 3: СЛЕД ИСКЛЮЧЕНИЯ (задание 3.1) ==================
+=== получен при тестировании системы ИТ-снабжения ==============
+
+Exception in thread "main" java.lang.NullPointerException:
+  Cannot invoke "String.isBlank()" because "email" is null
+        at ru.supply.FormValidator.validate(FormValidator.java:31)
+        at ru.supply.OrderForm.submit(OrderForm.java:88)
+        at ru.supply.App.main(App.java:14)
+
+Контекст: дефект воспроизводится, если оставить поле
+«Email для уведомлений» пустым и нажать «Подать заявку»
+в ранней сборке системы (в текущей сборке заявка
+отправляется успешно - поведение уже меняли).
